@@ -16,8 +16,6 @@ import Footer from "@/components/site/FooterWrapper";
 import ContributionGrid from "@/components/site/ContributionGrid";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: `Profil – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}`,
 };
