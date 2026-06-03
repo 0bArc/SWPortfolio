@@ -24,7 +24,16 @@ cmd_dev() {
   npm run dev
 }
 
+ensure_pm2() {
+  if ! command -v pm2 &>/dev/null; then
+    warn "PM2 not found — installing globally..."
+    sudo npm install -g pm2
+  fi
+}
+
 cmd_deploy() {
+  ensure_pm2
+
   info "Pulling latest..."
   git pull
 
@@ -88,14 +97,22 @@ cmd_setup() {
 }
 
 cmd_install() {
+  ensure_pm2
   info "First-time install..."
   npm ci
   [[ -f .env.local ]] || { warn ".env.local missing — create it before building"; exit 1; }
   npm run build
   pm2 start npm --name "$APP" -- start
   pm2 save
-  pm2 startup | tail -1
-  ok "Done. Run the printed pm2 startup command as root to enable autostart."
+  STARTUP_CMD=$(pm2 startup 2>&1 | grep -E '^\s*sudo' | head -1)
+  if [[ -n "$STARTUP_CMD" ]]; then
+    info "Configuring autostart: $STARTUP_CMD"
+    eval "$STARTUP_CMD"
+    ok "Autostart configured — app will start on server reboot."
+  else
+    warn "Could not detect pm2 startup command — run 'pm2 startup' manually."
+  fi
+  ok "Done."
 }
 
 cmd_nginx() {
