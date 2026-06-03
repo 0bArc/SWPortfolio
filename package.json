@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "aus:bootup": "node --env-file=.env.local scripts/aus-test.mjs bootup",
+    "aus:warning": "node --env-file=.env.local scripts/aus-test.mjs warning",
+    "aus:alert": "node --env-file=.env.local scripts/aus-test.mjs alert",
+    "aus:severe": "node --env-file=.env.local scripts/aus-test.mjs severe",
+    "aus:summary": "node --env-file=.env.local scripts/aus-test.mjs summary",
+    "aus:simulate": "node scripts/aus-simulate.mjs full",
+    "aus:simulate:probe": "node scripts/aus-simulate.mjs probe",
+    "aus:simulate:ratelimit": "node scripts/aus-simulate.mjs ratelimit"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

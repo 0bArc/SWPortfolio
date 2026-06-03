@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import Navbar from "@/components/site/Navbar";
 import Hero from "@/components/site/Hero";
 import AboutMe from "@/components/site/AboutMe";
@@ -11,6 +12,8 @@ import { getRepoList } from "@/lib/github";
 import { fetchOG } from "@/lib/og";
 
 async function ReposContent() {
+  "use cache";
+  cacheLife("hours");
   let repos: Awaited<ReturnType<typeof getRepoList>> = [];
   try {
     repos = await getRepoList();
@@ -21,6 +24,8 @@ async function ReposContent() {
 }
 
 async function ExperienceContent() {
+  "use cache";
+  cacheLife("hours");
   const url = process.env.NEXT_PUBLIC_FEATURED_WORK;
   const og = url ? await fetchOG(url) : null;
   return <Experience og={og} />;
