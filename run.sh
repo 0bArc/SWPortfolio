@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP="kristiansen"
-DIR="/var/www/kristiansen.icu"
 CMD="${1:-help}"
+
+# Load .env.local if present
+[[ -f .env.local ]] && set -a && source .env.local && set +a
+
+APP="${AUS_APP_NAME:?AUS_APP_NAME not set in .env.local}"
+DIR="${AUS_APP_DIR:?AUS_APP_DIR not set in .env.local}"
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' B='\033[0;34m' N='\033[0m'

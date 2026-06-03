@@ -44,9 +44,13 @@ sudo ufw enable
 ```env
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
-NEXT_PUBLIC_GITHUB_USER=0bArc
-NEXT_PUBLIC_SITE_OWNER=Sander Kristiansen
+NEXT_PUBLIC_GITHUB_USER=your_github_user
+NEXT_PUBLIC_SITE_OWNER=Your Name
 # NEXT_PUBLIC_FEATURED_WORK=https://...
+
+# run.sh
+AUS_APP_NAME=your-pm2-app-name
+AUS_APP_DIR=/var/www/your-site
 ```
 
 ---
