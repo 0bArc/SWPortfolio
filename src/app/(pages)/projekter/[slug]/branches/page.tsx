@@ -21,6 +21,8 @@ interface Props {
   searchParams: Promise<{ branch?: string }>;
 }
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   return { title: `${slug} / branches – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}` };
