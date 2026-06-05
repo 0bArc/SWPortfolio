@@ -26,11 +26,13 @@ const t = {
       work: "Arbeid",
       projects: "Prosjekter",
       profile: "Profil",
+      blog: "Innlegg",
     },
     hero: {
       title: "Utvikler & Redaktør.",
       bio: "Jeg lærer meg C++ og har en stor interesse for cybersikkerhet. Kombinerer koding med skriving som redaktør for Gropmarka.",
       contact: "Kontakt",
+      blog: "Innlegg",
       openSource: "Open Source on GitHub",
     },
     about: {
@@ -51,6 +53,14 @@ const t = {
       heading: "Prosjekter",
       fallbackDesc: "GitHub prosjekt",
       fallbackLang: "Kode",
+    },
+    blog: {
+      heading: "Innlegg",
+      seeAll: "Se alle",
+      all: "Alle",
+      back: "Tilbake til innlegg",
+      readMin: "min lest",
+      empty: "Ingen innlegg ennå.",
     },
     footer: {
       privacy: "Jeg lagrer ikke personlig informasjon.",
@@ -103,11 +113,13 @@ const t = {
       work: "Work",
       projects: "Projects",
       profile: "Profile",
+      blog: "Blog",
     },
     hero: {
       title: "Developer & Editor.",
       bio: "I'm learning C++ and have a strong interest in cybersecurity. I combine coding with writing as an editor for Gropmarka.",
       contact: "Contact",
+      blog: "Blog",
       openSource: "Open Source on GitHub",
     },
     about: {
@@ -128,6 +140,14 @@ const t = {
       heading: "Projects",
       fallbackDesc: "GitHub project",
       fallbackLang: "Code",
+    },
+    blog: {
+      heading: "Posts",
+      seeAll: "See all",
+      all: "All",
+      back: "Back to posts",
+      readMin: "min read",
+      empty: "No posts yet.",
     },
     footer: {
       privacy: "I don't store personal information.",

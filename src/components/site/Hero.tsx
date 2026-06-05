@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { Mail, PenLine } from "lucide-react";
 import { CONTACT_EMAIL, GITHUB_URL } from "@/lib/env";
 import { useI18n } from "@/providers/I18nProvider";
 
@@ -39,6 +39,13 @@ export default function Hero() {
         >
           <GithubIcon className="w-4 h-4" />
           GitHub
+        </Link>
+        <Link
+          href="/blog"
+          className="glass px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/10 transition-all flex items-center gap-2"
+        >
+          <PenLine className="w-4 h-4" />
+          {t("hero.blog")}
         </Link>
       </div>
       <div className="mt-6 text-gray-500 text-xs font-bold uppercase tracking-[0.22em] flex items-center gap-2 reveal reveal-delay-1">

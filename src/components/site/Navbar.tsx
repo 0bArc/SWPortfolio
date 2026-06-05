@@ -38,6 +38,9 @@ export default function Navbar() {
           <Link href={a("#prosjekter")} className={pill}>
             {t("nav.projects")}
           </Link>
+          <Link href="/blog" className={pill}>
+            {t("nav.blog")}
+          </Link>
           <Link href="/profil" className={`${pill} flex items-center gap-1.5`}>
             <GithubIcon className="w-3.5 h-3.5" />
             {t("nav.profile")}

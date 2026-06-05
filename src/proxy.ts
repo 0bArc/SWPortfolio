@@ -13,7 +13,7 @@ export function proxy(_request: NextRequest) {
       : "script-src 'self' 'unsafe-inline'",
     "connect-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://avatars.githubusercontent.com",
+    "img-src 'self' data: https://avatars.githubusercontent.com https://github.com",
     "font-src 'self'",
   ].join("; ");
 
