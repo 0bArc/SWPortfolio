@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Oslo
+    open-pull-requests-limit: 5
+    groups:
+      security-patches:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+    labels:
+      - security
+      - aus
+    commit-message:
+      prefix: "fix(deps)"
