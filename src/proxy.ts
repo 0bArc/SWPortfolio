@@ -1,6 +1,29 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { verifyToken, COOKIE_NAME } from "@/lib/admin-auth";
 
-export function proxy(_request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Protect all /admin and /api/admin routes except login endpoints
+  const isAdminRoute =
+    pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+  const isAuthExempt =
+    pathname === "/admin/login" ||
+    pathname.startsWith("/api/admin/login") ||
+    pathname.startsWith("/api/admin/logout");
+
+  if (isAdminRoute && !isAuthExempt) {
+    const sessionCookie = request.cookies.get(COOKIE_NAME);
+    const secret = process.env.ADMIN_SESSION_SECRET;
+    const valid =
+      secret && sessionCookie
+        ? await verifyToken(sessionCookie.value, secret)
+        : false;
+    if (!valid) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+  }
+
   const isDev = process.env.NODE_ENV === "development";
   const csp = [
     "default-src 'self'",

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "highlight.js/styles/github-dark.css";
 
 .site-meta { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
 
@@ -184,27 +185,145 @@
     border: 1px solid rgba(34, 197, 94, 0.22);
     text-shadow: 0 0 7px rgba(74, 222, 128, 0.55);
   }
-  .prose-blog { @apply text-gray-300 leading-[1.78] text-[15px]; }
-  .prose-blog > p:first-child { @apply text-gray-200 text-[16px]; }
-  .prose-blog p { @apply mb-5; }
+  /* ── Prose ─────────────────────────────────────────────── */
+  .prose-blog { @apply text-gray-300 leading-[1.82] text-[15px]; }
+  .prose-blog p { @apply mb-6; }
+  .prose-blog > p:first-child { @apply text-gray-200 text-[16px] leading-relaxed; }
+
   .prose-blog h2 {
-    @apply text-white font-bold text-xl mt-12 mb-4;
-    padding-left: 0.75rem;
-    border-left: 2px solid rgba(255, 255, 255, 0.18);
+    @apply text-white font-bold text-xl mt-14 mb-5;
+    padding-left: 0.85rem;
+    border-left: 2px solid rgba(255,255,255,0.22);
+    letter-spacing: -0.01em;
   }
-  .prose-blog h3 { @apply text-white font-semibold text-[16px] mt-7 mb-2; }
-  .prose-blog a { @apply text-white underline underline-offset-2 hover:text-gray-300 transition-colors; }
-  .prose-blog code { @apply text-sm bg-white/5 px-1.5 py-0.5 rounded text-gray-200 font-mono; }
-  .prose-blog pre { @apply bg-white/5 rounded-xl p-5 mb-5 overflow-x-auto text-sm; }
-  .prose-blog pre code { @apply bg-transparent p-0; }
-  .prose-blog ul { list-style: none; padding-left: 0; margin-bottom: 1.25rem; }
-  .prose-blog ol { @apply list-decimal pl-5 mb-5 space-y-1.5; color: rgb(156 163 175); }
-  .prose-blog ul li { padding-left: 1.25rem; position: relative; margin-bottom: 0.375rem; color: rgb(156 163 175); }
-  .prose-blog ul li::before { content: "›"; position: absolute; left: 0; color: rgba(255,255,255,0.25); font-size: 1rem; line-height: 1.5; }
+  .prose-blog h3 {
+    @apply text-white font-semibold text-[16px] mt-10 mb-3;
+    letter-spacing: -0.01em;
+  }
+  .prose-blog h4 { @apply text-gray-200 font-semibold text-[14px] mt-7 mb-2 uppercase tracking-widest; }
+
+  .prose-blog a {
+    @apply text-white underline underline-offset-2 decoration-white/30 hover:decoration-white transition-colors;
+  }
+
+  .prose-blog strong { @apply text-white font-semibold; }
+  .prose-blog em { @apply text-gray-300 italic; }
+
+  /* Inline code */
+  .prose-blog :not(pre) > code {
+    @apply text-[13px] font-mono px-1.5 py-0.5 rounded;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgb(229 231 235);
+  }
+
+  /* Code block */
+  .prose-blog pre {
+    @apply rounded-xl mb-6 overflow-x-auto text-[13px] leading-relaxed;
+    background: rgb(13 17 23);
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 1.25rem 1.5rem;
+  }
+  .prose-blog pre code { background: transparent !important; border: none !important; padding: 0 !important; font-size: inherit; }
+
+  /* Lists */
+  .prose-blog ul { list-style: none; padding-left: 0; margin-bottom: 1.5rem; }
+  .prose-blog ol { @apply list-decimal pl-5 mb-6 space-y-2; color: rgb(156 163 175); }
+  .prose-blog ul li {
+    padding-left: 1.25rem; position: relative;
+    margin-bottom: 0.5rem; color: rgb(156 163 175);
+  }
+  .prose-blog ul li::before {
+    content: "—"; position: absolute; left: 0;
+    color: rgba(255,255,255,0.18); font-size: 0.85rem; line-height: 1.7;
+  }
   .prose-blog ol li { color: rgb(156 163 175); }
   .prose-blog li a { @apply text-white; }
-  .prose-blog blockquote { @apply border-l-2 border-white/20 pl-4 text-gray-500 italic mb-5; }
-  .prose-blog hr { @apply border-white/10 my-10; }
+
+  /* Blockquote */
+  .prose-blog blockquote {
+    @apply mb-6 italic;
+    padding: 0.75rem 1.25rem;
+    border-left: 3px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.025);
+    border-radius: 0 8px 8px 0;
+    color: rgb(156 163 175);
+  }
+  .prose-blog blockquote p { @apply mb-0; }
+
+  /* Divider */
+  .prose-blog hr {
+    @apply my-12;
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+  }
+
+  /* Images */
+  .prose-blog img {
+    @apply rounded-xl mb-6 w-full;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  /* Tables */
+  .prose-blog table { @apply w-full mb-6 text-sm; border-collapse: collapse; }
+  .prose-blog th {
+    @apply text-left font-semibold text-[11px] uppercase tracking-widest text-gray-500 pb-2;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 0.5rem 0.75rem;
+  }
+  .prose-blog td {
+    @apply text-gray-400;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 0.6rem 0.75rem;
+  }
+  .prose-blog tr:last-child td { border-bottom: none; }
+  .admin-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgb(107 114 128);
+    margin-bottom: 6px;
+  }
+  .admin-input {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    color: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .admin-input:focus {
+    border-color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.05);
+  }
+  .admin-input::placeholder { color: rgb(75 85 99); }
+  .admin-input option { background: #111; }
+  .preview-fade {
+    animation: previewFadeIn 0.18s ease both;
+  }
+  @keyframes previewFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0);   }
+  }
+  .slash-menu {
+    animation: slashMenuIn 0.13s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: top left;
+  }
+  @keyframes slashMenuIn {
+    from { opacity: 0; transform: scale(0.92) translateY(-6px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+  }
+  /* hljs — strip its own padding/bg so our pre wrapper controls it */
+  .hljs { background: transparent !important; padding: 0 !important; }
+  .prose-blog pre .hljs { color: inherit; }
+  /* Editor preview uses a slightly different bg */
+  .preview-blog pre { background: rgb(13 17 23); border: 1px solid rgba(255,255,255,0.07); }
   .reveal-delay-1 { transition-delay: 0.06s; }
   .reveal-delay-2 { transition-delay: 0.12s; }
   .reveal-delay-3 { transition-delay: 0.18s; }
@@ -221,8 +340,9 @@
 }
 
 @media (min-width: 768px) {
-  .prose-blog { font-size: 16px; line-height: 1.8; }
-  .prose-blog h2 { font-size: 1.375rem; }
+  .prose-blog { font-size: 16px; line-height: 1.85; }
+  .prose-blog h2 { font-size: 1.4rem; }
+  .prose-blog pre { font-size: 14px; }
 }
 
 @keyframes loadingScreenFade {
@@ -239,6 +359,19 @@
 @keyframes subtitlePulse {
   0%, 100% { color: rgb(156 163 175); }
   50% { color: rgb(255 255 255); }
+}
+
+@keyframes name-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.name-shimmer {
+  background: linear-gradient(90deg, #4ade80, #ffffff, #4ade80);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: name-shimmer 3s linear infinite;
 }
 
 @keyframes badge-rainbow {

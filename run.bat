@@ -24,6 +24,7 @@ if "%APP%"=="" set "APP=swportfolio"
 
 if /i "%CMD%"=="auto"    goto :cmd_auto
 if /i "%CMD%"=="dev"     goto :cmd_dev
+if /i "%CMD%"=="db"      goto :cmd_db
 if /i "%CMD%"=="build"   goto :cmd_build
 if /i "%CMD%"=="install" goto :cmd_install
 if /i "%CMD%"=="deploy"  goto :cmd_deploy
@@ -85,6 +86,35 @@ pm2 status
 goto :eof
 
 :: ─────────────────────────────────────────────────────────────────────────────
+
+:cmd_db
+where docker >nul 2>&1 || ( echo %R%[ERR]%N% Docker not found — install Docker Desktop & exit /b 1 )
+docker info >nul 2>&1
+if errorlevel 1 (
+    echo %Y%[WARN]%N% Docker not running — starting Docker Desktop...
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    echo %B%[run]%N% Waiting for Docker engine...
+)
+:db_wait_engine
+docker info >nul 2>&1
+if errorlevel 1 ( timeout /t 3 /nobreak >nul & goto :db_wait_engine )
+echo %G%[OK]%N%  Docker engine ready
+echo %B%[run]%N% Starting Postgres...
+docker start blog-db >nul 2>&1
+if errorlevel 1 (
+    echo %B%[run]%N% Container not found — creating blog-db...
+    docker run -d --name blog-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=blog -p 5432:5432 postgres:16
+)
+echo %B%[run]%N% Waiting for Postgres to be ready...
+:db_wait_pg
+timeout /t 1 /nobreak >nul
+docker exec blog-db pg_isready -U postgres -q >nul 2>&1
+if errorlevel 1 goto :db_wait_pg
+echo %G%[OK]%N%  Postgres ready
+echo %B%[run]%N% Applying schema...
+docker exec -i blog-db psql -U postgres -d blog < src\lib\db\schema.sql
+echo %G%[OK]%N%  DB ready
+goto :eof
 
 :cmd_dev
 if not exist .env.local ( echo %R%[ERR]%N% .env.local missing & exit /b 1 )
@@ -188,6 +218,7 @@ echo   %B%kristiansen.icu ^— run.bat%N%
 echo.
 echo   auto          Install everything + start all PM2 processes
 echo   dev           Start local dev server
+echo   db            Start Postgres Docker container + apply schema
 echo   build         Build app + AUS
 echo   install       npm ci + build (app + AUS, full clean)
 echo   deploy        git pull + smart deps/build + restart both PM2 processes

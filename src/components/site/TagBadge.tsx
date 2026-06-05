@@ -5,17 +5,17 @@ const classes: Record<TagVariant, string> = {
   glass:
     "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-white/[0.04] border border-white/10 transition-colors hover:text-gray-300",
   rainbow:
-    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white badge-rainbow",
+    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-indigo-600",
   hacker:
     "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono badge-hacker",
   purple:
-    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-violet-600 to-purple-400",
+    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-violet-600",
   blue:
-    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-sky-500 to-indigo-500",
+    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-sky-600",
   fire:
-    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-orange-500 to-red-500",
+    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-orange-600",
   cyan:
-    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-cyan-500 to-sky-500",
+    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-cyan-600",
 };
 
 interface Props {

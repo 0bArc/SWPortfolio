@@ -13,7 +13,7 @@ export default function PostAuthor() {
         className="rounded-full border border-white/10 flex-shrink-0"
       />
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-semibold text-white leading-none">{SITE_OWNER}</span>
+        <span className="text-sm font-semibold leading-none name-shimmer">{SITE_OWNER}</span>
         <AuthorBadge label="Author" />
       </div>
     </div>
