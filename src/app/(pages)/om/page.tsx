@@ -1,4 +1,4 @@
-import Navbar from "@/components/site/Navbar";
+import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
 
 export const metadata = { title: `Om meg – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}` };

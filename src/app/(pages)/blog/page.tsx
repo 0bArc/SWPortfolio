@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import Navbar from "@/components/site/Navbar";
+import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
 import { listPublishedPosts, getAllTags, type PostMeta } from "@/lib/posts";
 import { getLang } from "@/lib/lang";

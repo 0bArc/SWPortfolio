@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { cacheLife } from "next/cache";
-import Navbar from "@/components/site/Navbar";
+import Navbar from "@/components/site/NavbarWrapper";
 import Hero from "@/components/site/Hero";
 import AboutMe from "@/components/site/AboutMe";
 import Experience from "@/components/site/Experience";

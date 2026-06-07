@@ -12,7 +12,7 @@ import {
 import { getUserProfile, getUserContributions, type WeekActivity } from "@/lib/github";
 import { getLang } from "@/lib/lang";
 import { translations, get } from "@/lib/i18n";
-import Navbar from "@/components/site/Navbar";
+import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
 import ContributionGrid from "@/components/site/ContributionGrid";
 import type { Metadata } from "next";

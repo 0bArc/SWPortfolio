@@ -11,7 +11,7 @@ import {
 import { getBranches, getBranchCommits, getRepoData, type Commit } from "@/lib/github";
 import { getLang } from "@/lib/lang";
 import { translations, get } from "@/lib/i18n";
-import Navbar from "@/components/site/Navbar";
+import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
 import CommitList from "@/components/site/CommitList";
 import type { Metadata } from "next";

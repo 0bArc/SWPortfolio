@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import Navbar from "@/components/site/Navbar";
+import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
 import TagBadge from "@/components/site/TagBadge";
 import PostAuthor from "@/components/site/PostAuthor";
@@ -20,19 +20,13 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const post = await getPublishedPost(slug);
-    if (!post) return {};
-    return {
-      title: `${post.title} – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}`,
-      description: post.excerpt,
-    };
-  } catch {
-    return {};
-  }
+  return {
+    title: `${slug} – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}`,
+  };
 }
 
-async function PostContent({ slug }: { slug: string }) {
+async function PostContent({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const post = await getPublishedPost(slug);
   if (!post) notFound();
 
@@ -87,13 +81,12 @@ async function PostContent({ slug }: { slug: string }) {
   );
 }
 
-export default async function BlogPostPage({ params }: Props) {
-  const { slug } = await params;
+export default function BlogPostPage({ params }: Props) {
   return (
     <>
       <Navbar />
-      <Suspense>
-        <PostContent slug={slug} />
+      <Suspense fallback={<main className="max-w-4xl mx-auto px-6 md:px-10 pt-24 pb-16 animate-pulse h-96" />}>
+        <PostContent params={params} />
       </Suspense>
       <Footer />
     </>

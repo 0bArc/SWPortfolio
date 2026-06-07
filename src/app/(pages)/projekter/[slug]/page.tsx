@@ -1,4 +1,4 @@
-import Navbar from "@/components/site/Navbar";
+import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
 import ProjectPageClient from "@/components/site/ProjectPageClient";
 import type { Metadata } from "next";
