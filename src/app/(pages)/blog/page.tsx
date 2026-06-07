@@ -103,7 +103,7 @@ async function PostList({ searchParams }: Props) {
               <div className="flex items-center justify-between">
                 <div className="flex flex-wrap gap-1.5">
                   {post.tags.map((tag) => (
-                    <TagBadge key={tag} tag={tag} href={`/blog?tag=${tag}`} />
+                    <TagBadge key={tag} tag={tag} />
                   ))}
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-gray-600 font-bold uppercase tracking-wider group-hover:text-gray-400 transition-colors">

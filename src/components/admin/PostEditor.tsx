@@ -2,19 +2,20 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Marked } from "marked";
-import hljs from "highlight.js";
+import { renderBlogMarkdown } from "@/lib/markdown-render";
+import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
+import BlogProse from "@/components/site/BlogProse";
 import "highlight.js/styles/github-dark.css";
 
-const markedInstance = new Marked({
-  renderer: {
-    code({ text, lang }: { text: string; lang?: string }) {
-      const language = lang && hljs.getLanguage(lang) ? lang : "plaintext";
-      const highlighted = hljs.highlight(text, { language }).value;
-      return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>\n`;
-    },
-  },
-});
+type SlashAction = "image" | "carousel";
+
+interface SlashItem {
+  key: string;
+  label: string;
+  tag: string;
+  insert?: string;
+  action?: SlashAction;
+}
 
 export interface PostData {
   slug?: string;
@@ -42,7 +43,7 @@ interface SlashMenu {
   coords: { top: number; left: number };
 }
 
-const SLASH_ITEMS = [
+const SLASH_ITEMS: SlashItem[] = [
   { key: "h1",       label: "Heading 1",      tag: "H1",   insert: "# "             },
   { key: "h2",       label: "Heading 2",      tag: "H2",   insert: "## "            },
   { key: "h3",       label: "Heading 3",      tag: "H3",   insert: "### "           },
@@ -53,8 +54,9 @@ const SLASH_ITEMS = [
   { key: "ol",       label: "Numbered list",  tag: "1.",   insert: "1. "            },
   { key: "bold",     label: "Bold",           tag: "B",    insert: "**text**"       },
   { key: "italic",   label: "Italic",         tag: "I",    insert: "*text*"         },
-  { key: "link",     label: "Link",           tag: "↗",    insert: "[text](url)"    },
-  { key: "image",    label: "Image",          tag: "🖼",   insert: "![alt](url)"    },
+  { key: "link",     label: "Link",           tag: "↗",    insert: "[text](https://)"    },
+  { key: "image",    label: "Image",          tag: "🖼",   action: "image"          },
+  { key: "carousel", label: "Carousel",       tag: "◫",    action: "carousel"       },
 ];
 
 function slugify(str: string) {
@@ -97,6 +99,9 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
   const router = useRouter();
   const taRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const pendingUpload = useRef<{ pos: number; action: SlashAction } | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -123,7 +128,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
   }, [form.title, slugEdited]);
 
   const previewHtml = useMemo(
-    () => markedInstance.parse(form.content || "") as string,
+    () => renderBlogMarkdown(form.content || ""),
     [form.content]
   );
 
@@ -159,18 +164,35 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     }
   }, []);
 
-  function insertSlashItem(item: typeof SLASH_ITEMS[number]) {
+  function applySlashItem(item: SlashItem) {
     const ta = taRef.current;
     if (!ta) return;
+    const end = ta.selectionStart ?? slash.slashPos;
+
+    if (item.action) {
+      const before = ta.value.slice(0, slash.slashPos);
+      const after = ta.value.slice(end);
+      set("content", before + after);
+      setSlash((p) => ({ ...p, active: false }));
+      pendingUpload.current = { pos: slash.slashPos, action: item.action };
+      requestAnimationFrame(() => {
+        if (!fileRef.current) return;
+        fileRef.current.multiple = item.action === "carousel";
+        fileRef.current.accept = "image/jpeg,image/png,image/webp,image/gif";
+        fileRef.current.click();
+      });
+      return;
+    }
+
+    if (!item.insert) return;
     const before = ta.value.slice(0, slash.slashPos);
-    const after  = ta.value.slice(ta.selectionStart ?? slash.slashPos);
+    const after = ta.value.slice(end);
     const newVal = before + item.insert + after;
     set("content", newVal);
-    setSlash(p => ({ ...p, active: false }));
-    // Restore focus + move cursor to end of inserted text
+    setSlash((p) => ({ ...p, active: false }));
     requestAnimationFrame(() => {
       ta.focus();
-      const pos = slash.slashPos + item.insert.length;
+      const pos = slash.slashPos + item.insert!.length;
       ta.setSelectionRange(pos, pos);
     });
   }
@@ -186,7 +208,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       setSlash(p => ({ ...p, selectedIdx: Math.max(p.selectedIdx - 1, 0) }));
     } else if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault();
-      if (items[slash.selectedIdx]) insertSlashItem(items[slash.selectedIdx]);
+      if (items[slash.selectedIdx]) applySlashItem(items[slash.selectedIdx]);
     } else if (e.key === "Escape") {
       setSlash(p => ({ ...p, active: false }));
     }
@@ -203,11 +225,66 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     return () => document.removeEventListener("mousedown", onDown);
   }, [slash.active]);
 
+  async function uploadImages(files: File[]) {
+    const out: { url: string; alt: string }[] = [];
+    for (const file of files) {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/admin/images", { method: "POST", body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Upload failed");
+      out.push({
+        url: (data as { url: string }).url,
+        alt: file.name.replace(/\.[^.]+$/, ""),
+      });
+    }
+    return out;
+  }
+
+  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    const pending = pendingUpload.current;
+    pendingUpload.current = null;
+    if (!files.length || !pending) return;
+
+    setUploading(true);
+    try {
+      const uploaded = await uploadImages(files);
+      let insert = "";
+      if (pending.action === "image") {
+        const u = uploaded[0];
+        insert = `![${u.alt}](${u.url})\n`;
+      } else {
+        insert = `:::carousel\n${uploaded.map((u) => `![${u.alt}](${u.url})`).join("\n")}\n:::\n\n`;
+      }
+
+      setForm((prev) => {
+        const pos = Math.min(pending.pos, prev.content.length);
+        const next = prev.content.slice(0, pos) + insert + prev.content.slice(pos);
+        return { ...prev, content: next };
+      });
+
+      requestAnimationFrame(() => {
+        const ta = taRef.current;
+        if (!ta) return;
+        ta.focus();
+        const c = pending.pos + insert.length;
+        ta.setSelectionRange(c, c);
+      });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSave(status: "draft" | "published") {
     setSaving(true);
     setSaveError("");
     try {
       const tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
+      const content = sanitizeMarkdownContent(form.content);
       const url =
         mode === "create"
           ? "/api/admin/posts"
@@ -215,7 +292,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, tags, status }),
+        body: JSON.stringify({ ...form, content, tags, status }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -294,6 +371,13 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
           </div>
         </div>
 
+        <input
+          ref={fileRef}
+          type="file"
+          className="hidden"
+          onChange={handleFilePick}
+        />
+
         {/* Editor pane */}
         <div className={`relative flex gap-0 rounded-xl overflow-hidden border border-white/[0.08] ${view === "split" ? "divide-x divide-white/[0.08]" : ""}`}>
           {/* Textarea */}
@@ -311,15 +395,17 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
 
           {/* Preview pane */}
           {view !== "write" && (
-            <div
+            <BlogProse
               key={view}
+              html={previewHtml}
               className="prose-blog preview-fade flex-1 p-6 overflow-y-auto min-h-[280px] bg-[#070707]"
-              dangerouslySetInnerHTML={{ __html: previewHtml || '<p style="color:#374151;font-size:13px;font-style:italic">Nothing to preview yet.</p>' }}
               style={{ maxHeight: 280 }}
             />
           )}
         </div>
-        <p className="mt-1.5 text-[11px] text-gray-700">Markdown / MDX</p>
+        <p className="mt-1.5 text-[11px] text-gray-700">
+          {uploading ? "Uploading…" : "Type / for blocks — Image & Carousel open file picker"}
+        </p>
       </div>
 
       {/* Meta */}
@@ -387,7 +473,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
             {filteredItems.map((item, i) => (
               <button
                 key={item.key}
-                onMouseDown={e => { e.preventDefault(); insertSlashItem(item); }}
+                onMouseDown={e => { e.preventDefault(); applySlashItem(item); }}
                 className={`flex items-center gap-3 w-full px-3 py-2 text-sm transition-colors text-left ${
                   i === slash.selectedIdx
                     ? "bg-white/10 text-white"

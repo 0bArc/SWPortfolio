@@ -1,15 +1,7 @@
 import { type NextRequest } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken, COOKIE_NAME } from "@/lib/admin-auth";
+import { requireAdmin, isValidSlug } from "@/lib/admin-auth";
 import { listPosts, createPost } from "@/lib/posts";
-
-async function isAuth(): Promise<boolean> {
-  const jar = await cookies();
-  const session = jar.get(COOKIE_NAME);
-  const secret = process.env.ADMIN_SESSION_SECRET;
-  if (!secret || !session) return false;
-  return verifyToken(session.value, secret);
-}
+import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
 
 function parseTags(raw: unknown): string[] {
   if (Array.isArray(raw)) return raw.map(String).map((t) => t.trim()).filter(Boolean);
@@ -18,13 +10,15 @@ function parseTags(raw: unknown): string[] {
 }
 
 export async function GET() {
-  if (!(await isAuth())) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const posts = await listPosts();
   return Response.json(posts);
 }
 
 export async function POST(request: NextRequest) {
-  if (!(await isAuth())) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   let body: Record<string, unknown>;
   try {
@@ -38,12 +32,17 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Missing required fields: slug, title, date" }, { status: 400 });
   }
 
+  const slugStr = String(slug);
+  if (!isValidSlug(slugStr)) {
+    return Response.json({ error: "Invalid slug — use lowercase letters, numbers, and hyphens" }, { status: 400 });
+  }
+
   try {
     const post = await createPost({
-      slug: String(slug),
+      slug: slugStr,
       title: String(title),
       excerpt: excerpt ? String(excerpt) : "",
-      content: content ? String(content) : "",
+      content: content ? sanitizeMarkdownContent(String(content)) : "",
       tags: parseTags(tags),
       author: author ? String(author) : "Sander Kristiansen",
       status: status === "published" ? "published" : "draft",

@@ -1,17 +1,9 @@
 import { type NextRequest } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken, COOKIE_NAME } from "@/lib/admin-auth";
+import { requireAdmin, isValidSlug } from "@/lib/admin-auth";
 import { getPost, updatePost, deletePost } from "@/lib/posts";
+import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
 
 type Ctx = { params: Promise<{ slug: string }> };
-
-async function isAuth(): Promise<boolean> {
-  const jar = await cookies();
-  const session = jar.get(COOKIE_NAME);
-  const secret = process.env.ADMIN_SESSION_SECRET;
-  if (!secret || !session) return false;
-  return verifyToken(session.value, secret);
-}
 
 function parseTags(raw: unknown): string[] | undefined {
   if (raw === undefined) return undefined;
@@ -21,16 +13,24 @@ function parseTags(raw: unknown): string[] | undefined {
 }
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
-  if (!(await isAuth())) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const { slug } = await params;
+  if (!isValidSlug(slug)) {
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
   const post = await getPost(slug);
   if (!post) return Response.json({ error: "Not found" }, { status: 404 });
   return Response.json(post);
 }
 
 export async function PUT(request: NextRequest, { params }: Ctx) {
-  if (!(await isAuth())) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const { slug } = await params;
+  if (!isValidSlug(slug)) {
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -41,11 +41,15 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
 
   const { title, excerpt, content, tags, author, status, date, slug: newSlug } = body;
 
+  if (newSlug !== undefined && !isValidSlug(String(newSlug))) {
+    return Response.json({ error: "Invalid slug — use lowercase letters, numbers, and hyphens" }, { status: 400 });
+  }
+
   try {
     const post = await updatePost(slug, {
       ...(title     !== undefined && { title:   String(title) }),
       ...(excerpt   !== undefined && { excerpt: String(excerpt) }),
-      ...(content   !== undefined && { content: String(content) }),
+      ...(content   !== undefined && { content: sanitizeMarkdownContent(String(content)) }),
       ...(author    !== undefined && { author:  String(author) }),
       ...(status    !== undefined && { status:  status === "published" ? "published" : "draft" }),
       ...(date      !== undefined && { date:    String(date) }),
@@ -65,8 +69,12 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
-  if (!(await isAuth())) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const { slug } = await params;
+  if (!isValidSlug(slug)) {
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
   const deleted = await deletePost(slug);
   if (!deleted) return Response.json({ error: "Not found" }, { status: 404 });
   return new Response(null, { status: 204 });

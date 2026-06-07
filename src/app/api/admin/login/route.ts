@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { signToken, COOKIE_NAME, COOKIE_MAX_AGE } from "@/lib/admin-auth";
+import { type NextRequest, NextResponse } from "next/server";
+import { signToken, COOKIE_NAME, COOKIE_MAX_AGE, safeEqual } from "@/lib/admin-auth";
 
 export async function POST(request: NextRequest) {
   let body: { username?: string; password?: string };
@@ -11,10 +11,13 @@ export async function POST(request: NextRequest) {
 
   const adminUsername = process.env.ADMIN_USERNAME;
   const adminPassword = process.env.ADMIN_PASSWORD;
+  const username = body.username ?? "";
+  const password = body.password ?? "";
+
   if (
     !adminUsername || !adminPassword ||
-    body.username !== adminUsername ||
-    body.password !== adminPassword
+    !safeEqual(username, adminUsername) ||
+    !safeEqual(password, adminPassword)
   ) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }

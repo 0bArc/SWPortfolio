@@ -20,6 +20,9 @@ export async function proxy(request: NextRequest) {
         ? await verifyToken(sessionCookie.value, secret)
         : false;
     if (!valid) {
+      if (pathname.startsWith("/api/admin")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
   }

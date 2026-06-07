@@ -2,13 +2,13 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { Marked } from "marked";
-import hljs from "highlight.js";
 import Navbar from "@/components/site/Navbar";
 import Footer from "@/components/site/FooterWrapper";
 import TagBadge from "@/components/site/TagBadge";
 import PostAuthor from "@/components/site/PostAuthor";
 import { getPublishedPost } from "@/lib/posts";
+import { renderBlogMarkdown } from "@/lib/markdown-render";
+import BlogProse from "@/components/site/BlogProse";
 import { getLang } from "@/lib/lang";
 import { translations, get } from "@/lib/i18n";
 import { translatePost } from "@/lib/translate";
@@ -45,16 +45,7 @@ async function PostContent({ slug }: { slug: string }) {
       ? await translatePost(slug, post.title, post.excerpt, post.content)
       : { title: post.title, body: post.content };
 
-  const blogMarked = new Marked({
-    renderer: {
-      code({ text, lang: l }: { text: string; lang?: string }) {
-        const language = l && hljs.getLanguage(l) ? l : "plaintext";
-        const highlighted = hljs.highlight(text, { language }).value;
-        return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>\n`;
-      },
-    },
-  });
-  const html = blogMarked.parse(body) as string;
+  const html = renderBlogMarkdown(body);
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(dateLocale, {
@@ -91,7 +82,7 @@ async function PostContent({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <div className="prose-blog" dangerouslySetInnerHTML={{ __html: html }} />
+      <BlogProse html={html} />
     </main>
   );
 }
