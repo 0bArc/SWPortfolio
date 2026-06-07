@@ -16,6 +16,8 @@ fi
 
 APP="${APP_NAME:?APP_NAME not set in .env.local}"
 DIR="${APP_DIR:?APP_DIR not set in .env.local}"
+SITE_DOMAIN="${SITE_DOMAIN:-$(basename "$DIR")}"
+APP_PORT="${APP_PORT:-3000}"
 
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' B='\033[0;34m' N='\033[0m'
 info()  { echo -e "${B}[run]${N} $*"; }
@@ -172,6 +174,14 @@ cmd_deploy() {
     pm2 save
   fi
   run_hook restart
+
+  sleep 2
+  if curl -sf -o /dev/null "http://127.0.0.1:${APP_PORT}/"; then
+    ok "App responding on :${APP_PORT}"
+  else
+    warn "App NOT responding on :${APP_PORT} — run './run.sh logs'"
+  fi
+
   ok "Deployed"
   pm2 status "$APP"
 }
@@ -237,17 +247,16 @@ cmd_auto() {
 }
 
 cmd_nginx() {
-  CONF="/etc/nginx/sites-available/swportfolio"
-  local app_port=3000
-  [[ -x "./.sys" ]] && app_port=$(./.sys port 2>/dev/null || echo 3000)
+  CONF="/etc/nginx/sites-available/${SITE_DOMAIN}"
+  info "Writing Nginx config for ${SITE_DOMAIN} → :${APP_PORT}..."
 
   sudo tee "$CONF" > /dev/null <<NGINX
 server {
     listen 80;
-    server_name swportfolio.win www.swportfolio.win;
+    server_name ${SITE_DOMAIN} www.${SITE_DOMAIN};
 
     location / {
-        proxy_pass         http://localhost:${app_port};
+        proxy_pass         http://127.0.0.1:${APP_PORT};
         proxy_http_version 1.1;
         proxy_set_header   Upgrade \$http_upgrade;
         proxy_set_header   Connection 'upgrade';
@@ -258,9 +267,42 @@ server {
     }
 }
 NGINX
-  sudo ln -sf "$CONF" /etc/nginx/sites-enabled/swportfolio
+  sudo ln -sf "$CONF" "/etc/nginx/sites-enabled/${SITE_DOMAIN}"
+  sudo rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
   sudo nginx -t && sudo systemctl reload nginx
-  ok "Nginx → port ${app_port}"
+  ok "Nginx → ${SITE_DOMAIN} on port ${APP_PORT}"
+}
+
+cmd_doctor() {
+  info "Health check for ${SITE_DOMAIN}..."
+  echo ""
+  systemctl is-active nginx 2>/dev/null && ok "nginx running" || warn "nginx NOT running — sudo systemctl start nginx"
+  pm2 describe "$APP" 2>/dev/null | grep -E "status|restarts|uptime" || warn "PM2 process '$APP' not found — run './run.sh install'"
+  echo ""
+  local code
+  code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${APP_PORT}/" 2>/dev/null || echo "000")
+  if [[ "$code" =~ ^[23] ]]; then
+    ok "App :${APP_PORT} → HTTP ${code}"
+  else
+    warn "App :${APP_PORT} → HTTP ${code} (502 cause if nginx ok)"
+    info "Try: ./run.sh logs"
+  fi
+  echo ""
+  if [[ -f "/etc/nginx/sites-enabled/${SITE_DOMAIN}" ]]; then
+    ok "Nginx site enabled: ${SITE_DOMAIN}"
+    grep "server_name" "/etc/nginx/sites-enabled/${SITE_DOMAIN}" 2>/dev/null || true
+  else
+    warn "No nginx config for ${SITE_DOMAIN} — run './run.sh nginx'"
+  fi
+  echo ""
+  if [[ -n "${DATABASE_URL:-}" ]]; then
+    parse_db_url
+    if command -v psql &>/dev/null; then
+      psql "$DATABASE_URL" -c "SELECT 1" &>/dev/null && ok "Postgres OK" || warn "Postgres connection failed"
+    fi
+  else
+    warn "DATABASE_URL not set in .env.local"
+  fi
 }
 
 cmd_logs()   { pm2 logs "$APP" --lines "${2:-50}"; }
@@ -279,6 +321,7 @@ cmd_help() {
   echo "  setup         Install system deps (Node, PM2, Nginx, Postgres)"
   echo "  install       npm ci + build + PM2 start"
   echo "  nginx         Write Nginx reverse-proxy config"
+  echo "  doctor        Check nginx + PM2 + app + DB"
   echo "  logs [n]      PM2 logs (default 50 lines)"
   echo "  status        PM2 status"
   echo "  restart       PM2 restart"
@@ -294,6 +337,7 @@ case "$CMD" in
   setup)   cmd_setup ;;
   install) cmd_install ;;
   nginx)   cmd_nginx ;;
+  doctor)  cmd_doctor ;;
   logs)    cmd_logs "$@" ;;
   status)  cmd_status ;;
   restart) cmd_restart ;;
