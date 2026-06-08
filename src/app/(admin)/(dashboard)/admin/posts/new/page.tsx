@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "New Post – Admin" };
 
 export default function NewPostPage() {
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-8">
         <Link
           href="/admin/posts"

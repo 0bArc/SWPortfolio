@@ -308,8 +308,8 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
   return (
     <div className="max-w-5xl mx-auto space-y-5">
       {/* Title / Slug / Author */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
           <label className="admin-label">Title</label>
           <input
             className="admin-input text-lg font-semibold"
@@ -347,22 +347,21 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
 
       {/* Content area */}
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
           <label className="admin-label mb-0">
             Content
-            <span className="text-gray-700 font-normal normal-case tracking-normal ml-1">
+            <span className="hidden sm:inline text-gray-700 font-normal normal-case tracking-normal ml-1">
               — type <kbd className="px-1 py-0.5 rounded text-[10px] bg-white/5 text-gray-500 font-mono">/</kbd> for blocks
             </span>
           </label>
-          {/* View mode tabs */}
-          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.06] self-start sm:self-auto">
             {(["write", "split", "preview"] as ViewMode[]).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors capitalize ${
+                className={`px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors capitalize ${
                   view === v ? "bg-white/10 text-white" : "text-gray-600 hover:text-gray-400"
-                }`}
+                } ${v === "split" ? "hidden sm:inline-block" : ""}`}
               >
                 {v}
               </button>
@@ -378,7 +377,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
         />
 
         {/* Editor pane */}
-        <div className={`relative flex gap-0 rounded-xl overflow-hidden border border-white/[0.08] ${view === "split" ? "divide-x divide-white/[0.08]" : ""}`}>
+        <div className={`relative flex flex-col md:flex-row gap-0 rounded-xl overflow-hidden border border-white/[0.08] ${view === "split" ? "md:divide-x divide-white/[0.08]" : ""}`}>
           {/* Textarea */}
           {view !== "preview" && (
             <textarea
@@ -408,7 +407,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       </div>
 
       {/* Meta */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="admin-label">Tags</label>
           <input
@@ -433,11 +432,11 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-2 border-t border-white/5">
-        <button onClick={() => router.back()} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-white/5">
+        <button onClick={() => router.back()} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors self-start">
           Cancel
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {saveError && (
             <p className="text-[12px] text-red-400 font-medium">{saveError}</p>
           )}

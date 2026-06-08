@@ -39,7 +39,7 @@ const SETTINGS: SettingRow[] = [
 
 export default function SettingsPage() {
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 md:p-8 max-w-2xl">
       <div className="mb-8">
         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">
           Configuration
@@ -56,7 +56,7 @@ export default function SettingsPage() {
           <div className="glass rounded-xl divide-y divide-white/5">
             {SETTINGS.map(({ label, key, value, hint, type }) => (
               <div key={key} className="px-5 py-4">
-                <div className="flex items-start justify-between gap-8">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-8">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-white">{label}</p>
                     <p className="text-[11px] font-mono text-gray-600 mt-0.5">{key}</p>
@@ -68,7 +68,7 @@ export default function SettingsPage() {
                     type={type ?? "text"}
                     defaultValue={value}
                     disabled
-                    className="admin-input w-64 shrink-0 opacity-60 cursor-not-allowed"
+                    className="admin-input w-full sm:w-64 shrink-0 opacity-60 cursor-not-allowed"
                     title="Edit in .env.local"
                   />
                 </div>
@@ -92,7 +92,7 @@ export default function SettingsPage() {
               { label: "Session secret", key: "ADMIN_SESSION_SECRET", hint: "HMAC-SHA256 signing key" },
             ].map(({ label, key, hint }) => (
               <div key={key} className="px-5 py-4">
-                <div className="flex items-start justify-between gap-8">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-8">
                   <div>
                     <p className="text-sm font-medium text-white">{label}</p>
                     <p className="text-[11px] font-mono text-gray-600 mt-0.5">{key}</p>
@@ -102,7 +102,7 @@ export default function SettingsPage() {
                     type="password"
                     defaultValue="••••••••••••"
                     disabled
-                    className="admin-input w-64 shrink-0 opacity-60 cursor-not-allowed"
+                    className="admin-input w-full sm:w-64 shrink-0 opacity-60 cursor-not-allowed"
                   />
                 </div>
               </div>

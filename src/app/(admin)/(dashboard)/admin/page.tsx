@@ -25,7 +25,7 @@ export default async function AdminDashboard() {
   const recent = posts.slice(0, 5);
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 md:p-8 max-w-5xl">
       <div className="mb-8">
         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">
           Overview
@@ -33,7 +33,7 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         {stats.map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href} className="glass rounded-xl p-5 card-hover group">
             <div className="flex items-start justify-between mb-3">
