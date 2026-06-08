@@ -1,4 +1,4 @@
-import { DEV_TEST, PROD_IDLE } from "./dev_test";
+import { DEV_TEST, PROD_IDLE } from "@/lib/admin/dev-test";
 
 export interface IdleConfig {
   testMode: boolean;

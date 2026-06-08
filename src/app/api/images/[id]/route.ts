@@ -1,4 +1,4 @@
-import { loadBlogImage } from "@/lib/blog-images";
+import { loadBlogImage } from "@/lib/blog/images";
 
 type Ctx = { params: Promise<{ id: string }> };
 

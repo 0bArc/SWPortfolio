@@ -1,4 +1,4 @@
-import { getPool } from "./db";
+import { getPool } from "@/lib/db";
 
 export interface PostMeta {
   id: number;

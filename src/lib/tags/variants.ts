@@ -12,6 +12,8 @@ const explicit: Record<string, TagVariant> = {
   koding: "blue",
   code: "blue",
   dev: "blue",
+  development: "purple",
+  update: "cyan",
   typescript: "blue",
   javascript: "blue",
   python: "cyan",

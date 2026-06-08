@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { IdleConfig } from "@/lib/session-idle";
+import type { IdleConfig } from "@/lib/admin/session-idle";
 
 const EVENTS = ["mousedown", "keydown", "touchstart"] as const;
 const RENEW_DEBOUNCE_MS = 60_000;

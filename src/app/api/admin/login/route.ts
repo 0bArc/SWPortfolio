@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { signToken, COOKIE_NAME, COOKIE_MAX_AGE, safeEqual } from "@/lib/admin-auth";
+import { signToken, COOKIE_NAME, COOKIE_MAX_AGE, safeEqual } from "@/lib/admin/auth";
 
 export async function POST(request: NextRequest) {
   let body: { username?: string; password?: string };

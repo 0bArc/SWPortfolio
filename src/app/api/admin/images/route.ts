@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
-import { saveBlogImage } from "@/lib/blog-images";
+import { requireAdmin } from "@/lib/admin/auth";
+import { saveBlogImage } from "@/lib/blog/images";
 
 export async function POST(request: NextRequest) {
   const denied = await requireAdmin();

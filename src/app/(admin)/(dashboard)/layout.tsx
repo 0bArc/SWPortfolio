@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminIdleGuard from "@/components/admin/AdminIdleGuard";
-import { getIdleConfig } from "@/lib/session-idle";
+import { getIdleConfig } from "@/lib/admin/session-idle";
 
 export default function DashboardLayout({
   children,

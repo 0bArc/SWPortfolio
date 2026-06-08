@@ -28,4 +28,11 @@ CREATE TABLE IF NOT EXISTS site_visitors (
 
 CREATE INDEX IF NOT EXISTS site_visitors_visitor_id_idx ON site_visitors (visitor_id);
 
+CREATE TABLE IF NOT EXISTS tag_styles (
+  slug       TEXT PRIMARY KEY,
+  config     JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- See seed.sql for optional dev seed (./run.sh db --seed)

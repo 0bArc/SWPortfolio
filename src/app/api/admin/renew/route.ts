@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, signToken, COOKIE_NAME, COOKIE_MAX_AGE } from "@/lib/admin-auth";
+import { requireAdmin, signToken, COOKIE_NAME, COOKIE_MAX_AGE } from "@/lib/admin/auth";
 
 export async function POST() {
   const denied = await requireAdmin();

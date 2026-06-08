@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { notFound } from "next/navigation";
-import { getPost } from "@/lib/posts";
+import { getPost } from "@/lib/blog/posts";
 import PostEditor from "@/components/admin/PostEditor";
 
 interface Props {

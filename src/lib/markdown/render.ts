@@ -1,6 +1,6 @@
 import { Marked } from "marked";
 import hljs from "highlight.js";
-import { sanitizeMarkdownHtml, sanitizeMarkdownUrl } from "./markdown-urls";
+import { sanitizeMarkdownHtml, sanitizeMarkdownUrl } from "@/lib/markdown/urls";
 
 export const PENDING_IMAGE_ALT = "__pending_image__";
 

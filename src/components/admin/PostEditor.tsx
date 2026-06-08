@@ -11,8 +11,8 @@ import {
   PENDING_IMAGE_ALT,
   blockAtCursor,
   type ContentBlock,
-} from "@/lib/markdown-render";
-import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
+} from "@/lib/markdown/render";
+import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 import BlogProse from "@/components/site/BlogProse";
 import EditorApiButton, { uploadEditorImages } from "@/components/admin/EditorApiButton";
 import EditorBlockControls, { EditorSizeFields } from "@/components/admin/EditorBlockControls";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Pencil, X } from "lucide-react";
+import TagInputPreview from "@/components/admin/TagInputPreview";
 
 type UploadAction = "image" | "carousel" | "carousel-add";
 
@@ -744,11 +745,12 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
           <label className="admin-label">Tags</label>
           <input
             className="admin-input"
-            placeholder="rust, backend, web"
+            placeholder="development, update, rust"
             value={form.tags}
             onChange={e => set("tags", e.target.value)}
           />
-          <p className="mt-1 text-[11px] text-gray-500">Comma-separated</p>
+          <TagInputPreview tags={form.tags} />
+          <p className="mt-1 text-[11px] text-gray-500">Comma-separated · styled in <a href="/admin/tags" className="text-gray-400 hover:text-white underline">Tags</a></p>
         </div>
         <div>
           <label className="admin-label">Publish date</label>

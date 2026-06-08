@@ -4,7 +4,7 @@ import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
 import LegalDocument from "@/components/site/LegalDocument";
 import { LegalPageFallback } from "@/components/site/LegalPageFallback";
-import { getTerms } from "@/lib/legal-content";
+import { getTerms } from "@/lib/legal/content";
 import { CONTACT_EMAIL, SITE_OWNER } from "@/lib/env";
 
 export const metadata: Metadata = {

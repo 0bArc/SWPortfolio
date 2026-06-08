@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { getTagVariant, type TagVariant } from "@/lib/tagStyles";
+import { getTagStyle } from "@/lib/tags/styles";
+import { getTagVariant, type TagVariant } from "@/lib/tags/variants";
+import StyledTagBadge from "./StyledTagBadge";
 
 const classes: Record<TagVariant, string> = {
   glass:
@@ -23,7 +25,12 @@ interface Props {
   href?: string;
 }
 
-export default function TagBadge({ tag, href }: Props) {
+export default async function TagBadge({ tag, href }: Props) {
+  const custom = await getTagStyle(tag);
+  if (custom) {
+    return <StyledTagBadge tag={tag} config={custom.config} href={href} />;
+  }
+
   const variant = getTagVariant(tag);
   const cls = classes[variant];
   const label = variant === "hacker" ? `> ${tag}_` : `#${tag}`;

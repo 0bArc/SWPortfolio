@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
-import { requireAdmin, isValidSlug } from "@/lib/admin-auth";
-import { getPost, updatePost, deletePost } from "@/lib/posts";
-import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
+import { requireAdmin, isValidSlug } from "@/lib/admin/auth";
+import { getPost, updatePost, deletePost } from "@/lib/blog/posts";
+import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 
 type Ctx = { params: Promise<{ slug: string }> };
 

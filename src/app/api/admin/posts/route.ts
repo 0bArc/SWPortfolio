@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
-import { requireAdmin, isValidSlug } from "@/lib/admin-auth";
-import { listPosts, createPost } from "@/lib/posts";
-import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
+import { requireAdmin, isValidSlug } from "@/lib/admin/auth";
+import { listPosts, createPost } from "@/lib/blog/posts";
+import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 
 function parseTags(raw: unknown): string[] {
   if (Array.isArray(raw)) return raw.map(String).map((t) => t.trim()).filter(Boolean);

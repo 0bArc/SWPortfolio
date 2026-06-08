@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Pencil, ExternalLink } from "lucide-react";
-import { listPosts } from "@/lib/posts";
+import { listPosts } from "@/lib/blog/posts";
 import DeletePostButton from "@/components/admin/DeletePostButton";
 
 export const metadata: Metadata = { title: "Posts – Admin" };

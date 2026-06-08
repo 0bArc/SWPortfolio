@@ -1,4 +1,4 @@
-import { idleTimeoutMs } from "./session-idle";
+import { idleTimeoutMs } from "@/lib/admin/session-idle";
 
 const COOKIE_NAME = "admin_session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days

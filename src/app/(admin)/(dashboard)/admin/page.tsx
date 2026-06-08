@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FileText, Eye, Plus, ArrowRight } from "lucide-react";
-import { listPosts, type PostMeta } from "@/lib/posts";
+import { listPosts, type PostMeta } from "@/lib/blog/posts";
 
 export const metadata: Metadata = { title: "Dashboard – Admin" };
 

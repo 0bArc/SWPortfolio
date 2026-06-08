@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
 CMD="${1:-help}"
 
 # .env.local values aren't quoted, parse manually
@@ -137,8 +140,26 @@ db_stats() {
   uploads=$(find uploads/blog -type f 2>/dev/null | wc -l | tr -d ' ')
   info "DB: ${posts} posts (${published} published) · ${uploads} uploaded images"
 }
+
+ensure_node() {
   command -v node &>/dev/null || die "Node.js not found — run './run.sh setup' first"
   ok "Node $(node -v)"
+}
+
+pm_start() {
+  export PORT="$APP_PORT"
+  pm2 delete "$APP" 2>/dev/null || true
+  pm2 start npm --name "$APP" --cwd "$ROOT" -- start -- -p "$APP_PORT"
+  pm2 save
+}
+
+pm_restart() {
+  export PORT="$APP_PORT"
+  if pm2 describe "$APP" &>/dev/null; then
+    pm2 restart "$APP" --update-env
+  else
+    pm_start
+  fi
 }
 
 ensure_pm2() {
@@ -223,10 +244,9 @@ cmd_update() {
   ensure_build
 
   if pm2 list 2>/dev/null | grep -q "$APP"; then
-    pm2 restart "$APP"
+    pm_restart
   else
-    pm2 start npm --name "$APP" -- start
-    pm2 save
+    pm_start
   fi
   run_hook restart
 
@@ -281,10 +301,9 @@ cmd_install() {
   ensure_build
 
   if pm2 list 2>/dev/null | grep -q "$APP"; then
-    pm2 restart "$APP"
+    pm_restart
   else
-    pm2 start npm --name "$APP" -- start
-    pm2 save
+    pm_start
   fi
 
   STARTUP_CMD=$(pm2 startup 2>&1 | grep -E '^\s*sudo' | head -1)
@@ -370,7 +389,7 @@ cmd_doctor() {
 
 cmd_logs()   { pm2 logs "$APP" --lines "${2:-50}"; }
 cmd_status() { pm2 status "$APP"; }
-cmd_restart(){ pm2 restart "$APP"; run_hook restart; ok "Restarted"; }
+cmd_restart(){ pm_restart; run_hook restart; ok "Restarted"; }
 cmd_stop()   { pm2 stop "$APP"; run_hook stop; warn "Stopped"; }
 
 cmd_help() {

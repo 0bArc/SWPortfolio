@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
-import { listPublishedPosts, getAllTags } from "@/lib/posts";
+import { listPublishedPosts, getAllTags } from "@/lib/blog/posts";
 import { translations, get } from "@/lib/i18n";
 import TagBadge from "@/components/site/TagBadge";
 import type { Metadata } from "next";

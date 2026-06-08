@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useI18n } from "@/providers/I18nProvider";
-import type { PostMeta } from "@/lib/posts";
+import type { PostMeta } from "@/lib/blog/posts";
 
 export default function BlogTeaser({ posts = [] }: { posts?: Pick<PostMeta, "slug" | "title" | "excerpt" | "date" | "tags">[] }) {
   const latest = posts.slice(0, 2);

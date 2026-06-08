@@ -1,12 +1,12 @@
 "use client";
 
 import EditorApiButton from "@/components/admin/EditorApiButton";
-import type { ContentBlock } from "@/lib/markdown-render";
+import type { ContentBlock } from "@/lib/markdown/render";
 import {
   serializeImage,
   serializeCarousel,
   isPendingImage,
-} from "@/lib/markdown-render";
+} from "@/lib/markdown/render";
 
 export function EditorSizeFields({
   w,
