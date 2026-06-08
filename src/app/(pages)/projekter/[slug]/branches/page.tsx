@@ -9,7 +9,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { getBranches, getBranchCommits, getRepoData, type Commit } from "@/lib/github";
-import { getLang } from "@/lib/lang";
 import { translations, get } from "@/lib/i18n";
 import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
@@ -27,8 +26,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 async function BranchesContent({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ branch?: string }> }) {
-  const [{ slug }, { branch: selectedBranch }, lang] = await Promise.all([params, searchParams, getLang()]);
-  const t = (path: string) => get(translations[lang], path);
+  const [{ slug }, { branch: selectedBranch }] = await Promise.all([params, searchParams]);
+  const t = (path: string) => get(translations, path);
   let branches;
   let detail;
   try {

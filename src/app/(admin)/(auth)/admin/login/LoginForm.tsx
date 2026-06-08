@@ -19,13 +19,15 @@ export default function LoginForm() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        credentials: "same-origin",
+        body: JSON.stringify({ username: username.trim(), password }),
       });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok) {
         router.push("/admin");
         router.refresh();
       } else {
-        setError("Invalid credentials.");
+        setError(data.error ?? `Login failed (${res.status})`);
         setPassword("");
       }
     } catch {
@@ -74,8 +76,8 @@ export default function LoginForm() {
 
       <button
         type="submit"
+        className="admin-btn admin-btn--primary admin-btn--lg w-full"
         disabled={loading || !username || !password}
-        className="w-full py-2.5 text-sm font-semibold rounded-xl bg-white text-black hover:bg-gray-100 transition-colors disabled:opacity-40"
       >
         {loading ? "Checking…" : "Sign in"}
       </button>

@@ -20,7 +20,14 @@ export default function Footer() {
       <Separator className="bg-white/10 mb-8" />
       <div className="flex justify-between items-center text-[11px] text-gray-400 font-medium">
         <p className="text-gray-300" suppressHydrationWarning>
-          © {new Date().getFullYear()} {SITE_OWNER.toUpperCase()} · {t("footer.privacy")}
+          © {new Date().getFullYear()} {SITE_OWNER.toUpperCase()} ·{" "}
+          <Link href="/terms" className="hover:text-white transition-colors">
+            {t("nav.terms")}
+          </Link>
+          {" · "}
+          <Link href="/privacy" className="hover:text-white transition-colors">
+            {t("nav.privacy")}
+          </Link>
         </p>
         <div className="flex gap-4">
           <Link

@@ -29,14 +29,12 @@ export default function DeletePostButton({ slug }: { slug: string }) {
 
   return (
     <button
+      type="button"
+      className={`admin-btn admin-btn--icon ${confirming ? "admin-btn--danger" : "admin-btn--outline"}`}
       onClick={handleClick}
       disabled={loading}
-      className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 ${
-        confirming
-          ? "text-red-400 bg-red-500/10"
-          : "text-gray-700 hover:text-red-400 hover:bg-red-500/5"
-      }`}
       title={confirming ? "Click again to confirm delete" : "Delete post"}
+      aria-label={confirming ? "Confirm delete" : "Delete post"}
     >
       <Trash2 className="w-3.5 h-3.5" />
     </button>

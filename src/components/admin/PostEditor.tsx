@@ -2,24 +2,44 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { renderBlogMarkdown } from "@/lib/markdown-render";
+import {
+  renderBlogMarkdown,
+  parseContentBlocks,
+  serializeImage,
+  serializeCarousel,
+  isPendingImage,
+  PENDING_IMAGE_ALT,
+  blockAtCursor,
+  type ContentBlock,
+} from "@/lib/markdown-render";
 import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
 import BlogProse from "@/components/site/BlogProse";
+import EditorApiButton, { uploadEditorImages } from "@/components/admin/EditorApiButton";
+import EditorBlockControls, { EditorSizeFields } from "@/components/admin/EditorBlockControls";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { Pencil, X } from "lucide-react";
 
-type SlashAction = "image" | "carousel";
+type UploadAction = "image" | "carousel" | "carousel-add";
 
 interface SlashItem {
   key: string;
   label: string;
   tag: string;
   insert?: string;
-  action?: SlashAction;
+  action?: UploadAction;
 }
 
 export interface PostData {
   slug?: string;
   title: string;
   excerpt: string;
+  featuredImage: string;
   content: string;
   tags: string;
   author: string;
@@ -31,8 +51,6 @@ interface PostEditorProps {
   initial?: Partial<PostData>;
   mode: "create" | "edit";
 }
-
-type ViewMode = "write" | "split" | "preview";
 
 interface SlashMenu {
   active: boolean;
@@ -48,12 +66,13 @@ const SLASH_ITEMS: SlashItem[] = [
   { key: "h3",       label: "Heading 3",      tag: "H3",   insert: "### "           },
   { key: "code",     label: "Code block",     tag: "</>",  insert: "```\n\n```\n"   },
   { key: "quote",    label: "Quote",          tag: "❝",    insert: "> "             },
-  { key: "divider",  label: "Divider",        tag: "—",    insert: "\n---\n\n"      },
+  { key: "div",      label: "Divider",        tag: "—",    insert: "---\n"          },
   { key: "ul",       label: "Bullet list",    tag: "•",    insert: "- "             },
   { key: "ol",       label: "Numbered list",  tag: "1.",   insert: "1. "            },
   { key: "bold",     label: "Bold",           tag: "B",    insert: "**text**"       },
   { key: "italic",   label: "Italic",         tag: "I",    insert: "*text*"         },
   { key: "link",     label: "Link",           tag: "↗",    insert: "[text](https://)"    },
+  { key: "button",   label: "Button",         tag: "Btn",  insert: "![button](https://)[text:Click me][color:white][position:center]\n" },
   { key: "image",    label: "Image",          tag: "🖼",   action: "image"          },
   { key: "carousel", label: "Carousel",       tag: "◫",    action: "carousel"       },
 ];
@@ -94,21 +113,191 @@ function detectSlash(value: string, cursor: number): { slashPos: number; query: 
   return { slashPos: i, query: value.slice(i + 1, cursor).toLowerCase() };
 }
 
+const IMAGE_PLACEHOLDER = `![${PENDING_IMAGE_ALT}]()\n`;
+const CAROUSEL_PLACEHOLDER = `:::carousel\n![${PENDING_IMAGE_ALT}]()\n:::\n`;
+
+const skeletonCls =
+  "w-full min-h-[10rem] sm:min-h-[8rem] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04] flex items-center justify-center text-sm sm:text-xs font-medium text-gray-400 cursor-pointer hover:border-white/35 hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors";
+
+function replaceRange(content: string, start: number, end: number, next: string) {
+  return content.slice(0, start) + next + content.slice(end);
+}
+
+function EditorContentPreview({
+  content,
+  onChange,
+  onRequestUpload,
+  onAddCarouselSlides,
+  uploading,
+  className,
+}: {
+  content: string;
+  onChange: (next: string) => void;
+  onRequestUpload: (block: ContentBlock) => void;
+  onAddCarouselSlides: (block: ContentBlock, files: File[]) => Promise<void>;
+  uploading: boolean;
+  className?: string;
+}) {
+  const blocks = useMemo(() => parseContentBlocks(content), [content]);
+
+  function patchBlock(block: ContentBlock, raw: string) {
+    onChange(replaceRange(content, block.start, block.end, raw));
+  }
+
+  const segments: ({ kind: "md"; html: string } | { kind: "block"; block: ContentBlock })[] = [];
+  let last = 0;
+  for (const block of blocks) {
+    if (block.start > last) {
+      segments.push({ kind: "md", html: renderBlogMarkdown(content.slice(last, block.start)) });
+    }
+    segments.push({ kind: "block", block });
+    last = block.end;
+  }
+  if (last < content.length) {
+    segments.push({ kind: "md", html: renderBlogMarkdown(content.slice(last)) });
+  }
+
+  if (!segments.length) {
+    segments.push({ kind: "md", html: renderBlogMarkdown(content) });
+  }
+
+  return (
+    <div
+      className={cn(
+        "prose-blog preview-fade flex-1 p-6 overflow-y-auto bg-[#070707]",
+        className ?? "min-h-[280px] max-h-[280px]"
+      )}
+    >
+      {segments.map((seg, i) => {
+        if (seg.kind === "md") {
+          return <BlogProse key={`md-${i}`} html={seg.html} className="prose-blog" />;
+        }
+
+        const block = seg.block;
+        if (block.type === "image") {
+          const pending = isPendingImage(block.alt, block.url);
+          return (
+            <div key={`img-${block.start}`} className="my-4 not-prose">
+              {pending ? (
+                <button
+                  type="button"
+                  className={`admin-btn admin-btn--outline admin-btn--sm ${skeletonCls} aspect-video w-full h-auto min-h-[10rem]`}
+                  onClick={() => onRequestUpload(block)}
+                  disabled={uploading}
+                >
+                  {uploading ? "Uploading…" : "Tap to add image"}
+                </button>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={block.url}
+                  alt={block.alt}
+                  className="rounded-xl border border-white/[0.07] max-w-full"
+                  style={{
+                    width: block.w ? `${block.w}px` : undefined,
+                    height: block.h ? `${block.h}px` : undefined,
+                  }}
+                />
+              )}
+              <EditorSizeFields
+                w={block.w}
+                h={block.h}
+                onW={(w) => patchBlock(block, serializeImage(block.alt, block.url, w, block.h))}
+                onH={(h) => patchBlock(block, serializeImage(block.alt, block.url, block.w, h))}
+              />
+            </div>
+          );
+        }
+
+        const pending =
+          !block.slides.length ||
+          block.slides.every((s) => isPendingImage(s.alt, s.url));
+        const filled = block.slides.filter((s) => !isPendingImage(s.alt, s.url));
+
+        return (
+          <div key={`car-${block.start}`} className="my-4 not-prose">
+            {pending ? (
+              <button
+                type="button"
+                className={`admin-btn admin-btn--outline admin-btn--sm ${skeletonCls} aspect-video w-full h-auto min-h-[10rem]`}
+                onClick={() => onRequestUpload(block)}
+                disabled={uploading}
+              >
+                {uploading ? "Uploading…" : "Tap to add carousel images"}
+              </button>
+            ) : (
+              <BlogProse
+                html={renderBlogMarkdown(
+                  serializeCarousel(filled, block.w, block.h).trimEnd()
+                )}
+                className="prose-blog"
+              />
+            )}
+            <EditorSizeFields
+              label="Carousel size"
+              w={block.w}
+              h={block.h}
+              onW={(w) =>
+                patchBlock(
+                  block,
+                  serializeCarousel(pending ? block.slides : filled, w, block.h)
+                )
+              }
+              onH={(h) =>
+                patchBlock(
+                  block,
+                  serializeCarousel(pending ? block.slides : filled, block.w, h)
+                )
+              }
+            />
+            {!pending && (
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <EditorApiButton
+                  multiple
+                  disabled={uploading}
+                  size="xs"
+                  onUpload={(files) => onAddCarouselSlides(block, files)}
+                >
+                  Add slide
+                </EditorApiButton>
+                <span className="text-[11px] text-gray-500">
+                  {filled.length} slide{filled.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PaneLabel({ children }: { children: string }) {
+  return (
+    <div className="px-3 py-1 border-b border-white/15 bg-white/[0.04] shrink-0">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{children}</span>
+    </div>
+  );
+}
+
 export default function PostEditor({ initial, mode }: PostEditorProps) {
   const router = useRouter();
   const taRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const pendingUpload = useRef<{ pos: number; action: SlashAction } | null>(null);
+  const pendingBlock = useRef<{ start: number; end: number; action: UploadAction } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [featuredUploading, setFeaturedUploading] = useState(false);
+  const [editorCursor, setEditorCursor] = useState(0);
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [view, setView] = useState<ViewMode>("write");
+  const [contentModalOpen, setContentModalOpen] = useState(false);
   const [form, setForm] = useState<PostData>({
     slug:    initial?.slug    ?? "",
     title:   initial?.title   ?? "",
     excerpt: initial?.excerpt ?? "",
+    featuredImage: initial?.featuredImage ?? "",
     content: initial?.content ?? "",
     tags:    initial?.tags    ?? "",
     author:  initial?.author  ?? "Sander Kristiansen",
@@ -126,19 +315,40 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       setForm(p => ({ ...p, slug: slugify(p.title) }));
   }, [form.title, slugEdited]);
 
-  const previewHtml = useMemo(
-    () => renderBlogMarkdown(form.content || ""),
-    [form.content]
+  useEffect(() => {
+    if (contentModalOpen) {
+      requestAnimationFrame(() => taRef.current?.focus());
+    }
+    if (!contentModalOpen) {
+      setSlash((p) => ({ ...p, active: false }));
+    }
+  }, [contentModalOpen]);
+
+  function openContentModal() {
+    setContentModalOpen(true);
+  }
+
+  const activeBlock = useMemo(
+    () => (contentModalOpen ? blockAtCursor(form.content, editorCursor) : null),
+    [contentModalOpen, form.content, editorCursor]
   );
 
-  const filteredItems = useMemo(() =>
-    slash.query === ""
-      ? SLASH_ITEMS
-      : SLASH_ITEMS.filter(
-          it => it.label.toLowerCase().includes(slash.query) || it.key.includes(slash.query)
-        ),
+  const filteredItems = useMemo(
+    () =>
+      slash.query === ""
+        ? SLASH_ITEMS
+        : SLASH_ITEMS.filter(
+            (it) =>
+              it.label.toLowerCase().includes(slash.query) ||
+              it.key.includes(slash.query)
+          ),
     [slash.query]
   );
+
+  const syncCursor = useCallback(() => {
+    const ta = taRef.current;
+    if (ta) setEditorCursor(ta.selectionStart ?? 0);
+  }, []);
 
   function set<K extends keyof PostData>(key: K, value: PostData[K]) {
     setForm(p => ({ ...p, [key]: value }));
@@ -146,8 +356,9 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
 
   const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    set("content", value);
     const cursor = e.target.selectionStart ?? 0;
+    set("content", value);
+    setEditorCursor(cursor);
     const detected = detectSlash(value, cursor);
     if (detected) {
       const coords = getCaretCoords(e.target, detected.slashPos);
@@ -171,14 +382,13 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     if (item.action) {
       const before = ta.value.slice(0, slash.slashPos);
       const after = ta.value.slice(end);
-      set("content", before + after);
+      const insert = item.action === "image" ? IMAGE_PLACEHOLDER : CAROUSEL_PLACEHOLDER;
+      set("content", before + insert + after);
       setSlash((p) => ({ ...p, active: false }));
-      pendingUpload.current = { pos: slash.slashPos, action: item.action };
       requestAnimationFrame(() => {
-        if (!fileRef.current) return;
-        fileRef.current.multiple = item.action === "carousel";
-        fileRef.current.accept = "image/jpeg,image/png,image/webp,image/gif";
-        fileRef.current.click();
+        ta.focus();
+        const pos = slash.slashPos + insert.length;
+        ta.setSelectionRange(pos, pos);
       });
       return;
     }
@@ -224,58 +434,80 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     return () => document.removeEventListener("mousedown", onDown);
   }, [slash.active]);
 
-  async function uploadImages(files: File[]) {
-    const out: { url: string; alt: string }[] = [];
-    for (const file of files) {
-      const body = new FormData();
-      body.append("file", file);
-      const res = await fetch("/api/admin/images", { method: "POST", body });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Upload failed");
-      out.push({
-        url: (data as { url: string }).url,
-        alt: file.name.replace(/\.[^.]+$/, ""),
-      });
-    }
-    return out;
-  }
+  async function applyBlockUpload(files: File[], pending: { start: number; end: number; action: UploadAction }) {
+    const uploaded = await uploadEditorImages(files);
+    const slides = uploaded.map((u) => ({ alt: u.alt, url: u.url }));
 
-  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = "";
-    const pending = pendingUpload.current;
-    pendingUpload.current = null;
-    if (!files.length || !pending) return;
-
-    setUploading(true);
-    try {
-      const uploaded = await uploadImages(files);
+    setForm((prev) => {
       let insert = "";
       if (pending.action === "image") {
-        const u = uploaded[0];
-        insert = `![${u.alt}](${u.url})\n`;
+        insert = serializeImage(slides[0].alt, slides[0].url);
+      } else if (pending.action === "carousel-add") {
+        const block = parseContentBlocks(prev.content).find((b) => b.start === pending.start);
+        if (block?.type === "carousel") {
+          const existing = block.slides.filter((s) => !isPendingImage(s.alt, s.url));
+          insert = serializeCarousel([...existing, ...slides], block.w, block.h);
+        }
       } else {
-        insert = `:::carousel\n${uploaded.map((u) => `![${u.alt}](${u.url})`).join("\n")}\n:::\n\n`;
+        insert = serializeCarousel(slides);
       }
+      if (!insert) return prev;
+      return {
+        ...prev,
+        content: replaceRange(prev.content, pending.start, pending.end, insert),
+      };
+    });
+  }
 
-      setForm((prev) => {
-        const pos = Math.min(pending.pos, prev.content.length);
-        const next = prev.content.slice(0, pos) + insert + prev.content.slice(pos);
-        return { ...prev, content: next };
-      });
+  function requestBlockUpload(block: ContentBlock) {
+    pendingBlock.current = {
+      start: block.start,
+      end: block.end,
+      action: block.type === "image" ? "image" : "carousel",
+    };
+    if (!fileRef.current) return;
+    fileRef.current.multiple = block.type === "carousel";
+    fileRef.current.accept = "image/jpeg,image/png,image/webp,image/gif";
+    fileRef.current.click();
+  }
 
-      requestAnimationFrame(() => {
-        const ta = taRef.current;
-        if (!ta) return;
-        ta.focus();
-        const c = pending.pos + insert.length;
-        ta.setSelectionRange(c, c);
+  async function handleAddCarouselSlides(block: ContentBlock, files: File[]) {
+    setUploading(true);
+    setSaveError("");
+    try {
+      await applyBlockUpload(files, {
+        start: block.start,
+        end: block.end,
+        action: "carousel-add",
       });
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
     }
+  }
+
+  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    const pending = pendingBlock.current;
+    pendingBlock.current = null;
+    if (!files.length || !pending) return;
+
+    setUploading(true);
+    setSaveError("");
+    try {
+      await applyBlockUpload(files, pending);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleFeaturedUpload(files: File[]) {
+    const [uploaded] = await uploadEditorImages(files);
+    set("featuredImage", uploaded.url);
   }
 
   async function handleSave(status: "draft" | "published") {
@@ -291,16 +523,23 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, content, tags, status }),
+        body: JSON.stringify({
+          ...form,
+          content,
+          tags,
+          status,
+          featuredImage: form.featuredImage || null,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { error?: string }).error ?? `Save failed (${res.status})`);
       }
-      router.push("/admin/posts");
+      await router.push("/admin/posts");
       router.refresh();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Save failed");
+    } finally {
       setSaving(false);
     }
   }
@@ -333,41 +572,68 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
         </div>
       </div>
 
-      {/* Excerpt */}
-      <div>
-        <label className="admin-label">Excerpt</label>
-        <textarea
-          className="admin-input resize-none"
-          rows={2}
-          placeholder="Short description shown in listing…"
-          value={form.excerpt}
-          onChange={e => set("excerpt", e.target.value)}
-        />
+      {/* Featured image + excerpt */}
+      <div className="grid grid-cols-1 md:grid-cols-[9rem_1fr] gap-4">
+        <div>
+          <label className="admin-label">Featured image</label>
+          {form.featuredImage ? (
+            <div className="relative w-full aspect-square rounded-xl border border-white/25 bg-black overflow-hidden mb-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={form.featuredImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="w-full aspect-square rounded-xl border border-dashed border-white/25 bg-black mb-2 flex items-center justify-center text-[11px] text-gray-400">
+              No image
+            </div>
+          )}
+          <EditorApiButton
+            variant="outline"
+            size="xs"
+            disabled={featuredUploading}
+            onUpload={async (files) => {
+              setFeaturedUploading(true);
+              setSaveError("");
+              try {
+                await handleFeaturedUpload(files);
+              } catch (err) {
+                setSaveError(err instanceof Error ? err.message : "Featured image upload failed");
+              } finally {
+                setFeaturedUploading(false);
+              }
+            }}
+          >
+            {form.featuredImage ? "Replace" : "Upload"}
+          </EditorApiButton>
+          {form.featuredImage && (
+            <button
+              type="button"
+              className="admin-btn admin-btn--ghost admin-btn--xs mt-2"
+              onClick={() => set("featuredImage", "")}
+            >
+              Remove
+            </button>
+          )}
+        </div>
+        <div>
+          <label className="admin-label">Excerpt</label>
+          <textarea
+            className="admin-input resize-none h-full min-h-[9rem]"
+            rows={4}
+            placeholder="Short description shown in listing…"
+            value={form.excerpt}
+            onChange={e => set("excerpt", e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Content area */}
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-          <label className="admin-label mb-0">
-            Content
-            <span className="hidden sm:inline text-gray-700 font-normal normal-case tracking-normal ml-1">
-              — type <kbd className="px-1 py-0.5 rounded text-[10px] bg-white/5 text-gray-500 font-mono">/</kbd> for blocks
-            </span>
-          </label>
-          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.06] self-start sm:self-auto">
-            {(["write", "split", "preview"] as ViewMode[]).map(v => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-2.5 sm:px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors capitalize ${
-                  view === v ? "bg-white/10 text-white" : "text-gray-600 hover:text-gray-400"
-                } ${v === "split" ? "hidden sm:inline-block" : ""}`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="pt-4 mt-1 border-t border-white/12">
+        <label className="admin-label mb-2">
+          Content
+          <span className="hidden sm:inline text-gray-500 font-normal normal-case tracking-normal ml-1">
+            — type <kbd className="px-1 py-0.5 rounded text-[10px] bg-white/8 text-gray-400 font-mono border border-white/15">/</kbd> for blocks
+          </span>
+        </label>
 
         <input
           ref={fileRef}
@@ -376,35 +642,101 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
           onChange={handleFilePick}
         />
 
-        {/* Editor pane */}
-        <div className={`relative flex flex-col md:flex-row gap-0 rounded-xl overflow-hidden border border-white/[0.08] ${view === "split" ? "md:divide-x divide-white/[0.08]" : ""}`}>
-          {/* Textarea */}
-          {view !== "preview" && (
-            <textarea
-              ref={taRef}
-              className="flex-1 bg-white/[0.03] p-4 font-mono text-sm text-white leading-relaxed resize-none outline-none min-h-[280px] placeholder:text-gray-700"
-              placeholder={"Start writing…\n\nType / at the start of a line for block options."}
-              value={form.content}
-              onChange={handleContentChange}
-              onKeyDown={handleKeyDown}
-              spellCheck={false}
-            />
-          )}
-
-          {/* Preview pane */}
-          {view !== "write" && (
-            <BlogProse
-              key={view}
-              html={previewHtml}
-              className="prose-blog preview-fade flex-1 p-6 overflow-y-auto min-h-[280px] bg-[#070707]"
-              style={{ maxHeight: 280 }}
-            />
-          )}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={openContentModal}
+            className="w-full text-left rounded-xl border border-white/20 bg-white/[0.05] p-3 pr-[8.5rem] min-h-[5rem] hover:border-white/30 hover:bg-white/[0.07] transition-colors"
+          >
+            <p className="font-mono text-xs sm:text-sm text-gray-300 line-clamp-3 whitespace-pre-wrap leading-relaxed">
+              {form.content || "Start writing…"}
+            </p>
+          </button>
+          <button
+            type="button"
+            className="admin-btn admin-btn--outline admin-btn--xs absolute right-3 top-1/2 -translate-y-1/2"
+            onClick={openContentModal}
+          >
+            <Pencil className="w-3.5 h-3.5" aria-hidden />
+            Open editor
+          </button>
         </div>
-        <p className="mt-1.5 text-[11px] text-gray-700">
-          {uploading ? "Uploading…" : "Type / for blocks — Image & Carousel open file picker"}
+        <p className="mt-2 text-[11px] text-gray-500">
+          {uploading ? "Uploading…" : "Split editor — markdown left, live preview right"}
         </p>
       </div>
+
+      <Dialog open={contentModalOpen} onOpenChange={setContentModalOpen}>
+        <DialogContent
+          showCloseButton={false}
+          overlayClassName="bg-black/70 supports-backdrop-filter:backdrop-blur-sm"
+          className={cn(
+            "glass flex flex-col gap-0 p-0 border-white/20 bg-[#050505] text-white overflow-hidden",
+            "!fixed !inset-0 !translate-x-0 !translate-y-0 !max-w-none !w-full !h-[100dvh] !rounded-none",
+            "sm:!inset-2 sm:!h-[calc(100dvh-1rem)] sm:!rounded-xl",
+            "lg:!inset-4 lg:!max-w-[min(90rem,calc(100%-2rem))] lg:!left-1/2 lg:!right-auto lg:!-translate-x-1/2 lg:!w-full"
+          )}
+        >
+          <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-white/15 shrink-0">
+            <DialogTitle className="admin-label mb-0">
+              Content
+            </DialogTitle>
+            <DialogClose
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+              aria-label="Close editor"
+            >
+              <X className="w-4 h-4" />
+            </DialogClose>
+          </div>
+
+          <div className="flex flex-col md:flex-row flex-1 min-h-0 divide-y md:divide-y-0 md:divide-x divide-white/15">
+            <div className="flex flex-col min-h-0 md:w-1/2">
+              <PaneLabel>Edit</PaneLabel>
+              <textarea
+                ref={taRef}
+                className="flex-1 min-h-[40vh] md:min-h-0 w-full bg-white/[0.04] p-3 sm:p-4 font-mono text-sm text-white leading-relaxed resize-none outline-none placeholder:text-gray-500 border-0"
+                placeholder={"Start writing…\n\nType / at the start of a line for block options."}
+                value={form.content}
+                onChange={handleContentChange}
+                onKeyDown={handleKeyDown}
+                onSelect={syncCursor}
+                onClick={syncCursor}
+                spellCheck={false}
+              />
+              {activeBlock && (
+                <EditorBlockControls
+                  block={activeBlock}
+                  uploading={uploading}
+                  onPatch={(raw) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      content: replaceRange(prev.content, activeBlock.start, activeBlock.end, raw),
+                    }))
+                  }
+                  onAddCarouselSlides={(files) => handleAddCarouselSlides(activeBlock, files)}
+                />
+              )}
+            </div>
+            <div className="flex flex-col min-h-0 md:w-1/2">
+              <PaneLabel>Preview</PaneLabel>
+              <EditorContentPreview
+                content={form.content}
+                uploading={uploading}
+                onChange={(next) => set("content", next)}
+                onRequestUpload={requestBlockUpload}
+                onAddCarouselSlides={handleAddCarouselSlides}
+                className="flex-1 min-h-[40vh] md:min-h-0 max-h-none p-3 sm:p-4"
+              />
+            </div>
+          </div>
+
+          <p className="px-3 py-1.5 text-[11px] text-gray-500 shrink-0 border-t border-white/15">
+            {uploading
+              ? "Uploading…"
+              : "Type / for blocks — tap dashed boxes in preview to upload"}
+          </p>
+        </DialogContent>
+      </Dialog>
 
       {/* Meta */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -416,7 +748,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
             value={form.tags}
             onChange={e => set("tags", e.target.value)}
           />
-          <p className="mt-1 text-[11px] text-gray-700">Comma-separated</p>
+          <p className="mt-1 text-[11px] text-gray-500">Comma-separated</p>
         </div>
         <div>
           <label className="admin-label">Publish date</label>
@@ -432,8 +764,8 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-white/5">
-        <button onClick={() => router.back()} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors self-start">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-white/12">
+        <button type="button" className="admin-btn admin-btn--ghost admin-btn--md self-start" onClick={() => router.back()}>
           Cancel
         </button>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
@@ -441,16 +773,18 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
             <p className="text-[12px] text-red-400 font-medium">{saveError}</p>
           )}
           <button
+            type="button"
+            className="admin-btn admin-btn--outline admin-btn--lg"
             disabled={saving}
             onClick={() => handleSave("draft")}
-            className="px-5 py-2 text-sm font-medium rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-50"
           >
-            Save draft
+            {saving ? "Saving…" : "Save draft"}
           </button>
           <button
+            type="button"
+            className="admin-btn admin-btn--primary admin-btn--lg"
             disabled={saving}
             onClick={() => handleSave("published")}
-            className="px-5 py-2 text-sm font-semibold rounded-lg bg-white text-black hover:bg-gray-100 transition-colors disabled:opacity-50"
           >
             {saving ? "Saving…" : "Publish"}
           </button>
@@ -461,7 +795,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
       {slash.active && filteredItems.length > 0 && (
         <div
           ref={menuRef}
-          style={{ top: slash.coords.top, left: slash.coords.left, position: "fixed", zIndex: 9999, width: MENU_W }}
+          style={{ top: slash.coords.top, left: slash.coords.left, position: "fixed", zIndex: 10000, width: MENU_W }}
           className="slash-menu rounded-xl overflow-hidden border border-white/10 bg-[#111] shadow-2xl shadow-black/60"
         >
           <p className="px-3 pt-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-600">

@@ -253,11 +253,52 @@
 
   /* Divider */
   .prose-blog hr {
-    @apply my-12;
+    @apply my-10 w-full clear-both;
     border: none;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+    border-top: 1px solid rgba(255, 255, 255, 0.85);
+    height: 0;
+    border-radius: 0;
+    background: none;
   }
+
+  /* Blog CTA buttons (markdown ![button]…) */
+  .prose-blog .blog-btn-wrap {
+    @apply flex mb-6 w-full;
+  }
+  .prose-blog .blog-btn-wrap--left { @apply justify-start; }
+  .prose-blog .blog-btn-wrap--center { @apply justify-center; }
+  .prose-blog .blog-btn-wrap--right { @apply justify-end; }
+  .prose-blog .blog-btn {
+    @apply inline-flex items-center justify-center min-w-[8rem] px-6 py-2.5 text-sm font-semibold rounded-none border transition-colors no-underline;
+  }
+  .prose-blog .blog-btn--white {
+    @apply bg-white text-black border-white hover:bg-gray-100;
+  }
+  .prose-blog .blog-btn--black {
+    @apply bg-black text-white border-white/40 hover:border-white/70 hover:bg-white/5;
+  }
+
+  /* Admin panel buttons (outline = black fill, primary = white fill) */
+  .admin-btn {
+    @apply inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-medium whitespace-nowrap transition-colors outline-none select-none disabled:pointer-events-none disabled:opacity-50;
+  }
+  .admin-btn--outline {
+    @apply bg-black text-white border border-white/40 hover:bg-white/10 hover:border-white/60;
+  }
+  .admin-btn--primary {
+    @apply bg-white text-black border border-white hover:bg-gray-100;
+  }
+  .admin-btn--ghost {
+    @apply bg-transparent text-gray-400 border border-transparent hover:text-white hover:bg-white/5;
+  }
+  .admin-btn--danger {
+    @apply bg-black text-red-400 border border-red-400/50 hover:bg-red-500/10 hover:border-red-400/80;
+  }
+  .admin-btn--xs { @apply h-7 px-2.5 text-[11px] font-semibold uppercase tracking-wider; }
+  .admin-btn--sm { @apply h-8 px-3 text-xs; }
+  .admin-btn--md { @apply h-9 px-4 text-sm; }
+  .admin-btn--lg { @apply h-10 px-5 text-sm font-semibold; }
+  .admin-btn--icon { @apply size-9 p-0; }
 
   /* Images */
   .prose-blog img {
@@ -316,25 +357,25 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: rgb(107 114 128);
+    color: rgb(156 163 175);
     margin-bottom: 6px;
   }
   .admin-input {
     width: 100%;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.18);
     border-radius: 8px;
     padding: 9px 12px;
     font-size: 14px;
     color: #fff;
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, background 0.15s;
   }
   .admin-input:focus {
-    border-color: rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.07);
   }
-  .admin-input::placeholder { color: rgb(75 85 99); }
+  .admin-input::placeholder { color: rgb(107 114 128); }
   .admin-input option { background: #111; }
   .preview-fade {
     animation: previewFadeIn 0.18s ease both;

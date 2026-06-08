@@ -10,7 +10,6 @@ import {
   GitCommitHorizontal,
 } from "lucide-react";
 import { getUserProfile, getUserContributions, type WeekActivity } from "@/lib/github";
-import { getLang } from "@/lib/lang";
 import { translations, get } from "@/lib/i18n";
 import Navbar from "@/components/site/NavbarWrapper";
 import Footer from "@/components/site/FooterWrapper";
@@ -18,7 +17,7 @@ import ContributionGrid from "@/components/site/ContributionGrid";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: `Profil – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}`,
+  title: `Profile – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}`,
 };
 
 function GithubIcon({ className }: { className?: string }) {
@@ -32,11 +31,8 @@ function GithubIcon({ className }: { className?: string }) {
 async function ProfilContent() {
   let profile: Awaited<ReturnType<typeof getUserProfile>> | null = null;
   let contributions: WeekActivity[] = [];
-  const lang = await getLang();
-  const tr = translations[lang];
-  const t = (path: string) => get(tr, path);
-
-  const dateLocale = t("dateLocale");
+  const t = (path: string) => get(translations, path);
+  const dateLocale = translations.dateLocale;
 
   try {
     [profile, contributions] = await Promise.all([
@@ -155,7 +151,7 @@ async function ProfilContent() {
                 </span>
               </div>
               <div className="glass p-5 rounded-xl">
-                <ContributionGrid weeks={last52} lang={lang} />
+                <ContributionGrid weeks={last52} />
               </div>
             </section>
           )}

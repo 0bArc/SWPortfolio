@@ -5,6 +5,7 @@ export interface PostMeta {
   slug: string;
   title: string;
   excerpt: string;
+  featuredImage: string | null;
   tags: string[];
   author: string;
   status: "draft" | "published";
@@ -23,13 +24,15 @@ function calcReadingTime(content: string): number {
 }
 
 const META_COLS = `
-  id, slug, title, excerpt, tags, author, status,
+  id, slug, title, excerpt, featured_image AS "featuredImage",
+  tags, author, status,
   date::text, reading_time AS "readingTime",
   created_at::text, updated_at::text
 `;
 
 const ALL_COLS = `
-  id, slug, title, excerpt, content, tags, author, status,
+  id, slug, title, excerpt, featured_image AS "featuredImage", content,
+  tags, author, status,
   date::text, reading_time AS "readingTime",
   created_at::text, updated_at::text
 `;
@@ -76,6 +79,7 @@ export interface CreatePostInput {
   title: string;
   excerpt: string;
   content: string;
+  featuredImage?: string | null;
   tags: string[];
   author: string;
   status: "draft" | "published";
@@ -85,10 +89,13 @@ export interface CreatePostInput {
 export async function createPost(data: CreatePostInput): Promise<Post> {
   const rt = calcReadingTime(data.content);
   const { rows } = await getPool().query<Post>(
-    `INSERT INTO posts (slug, title, excerpt, content, tags, author, status, date, reading_time)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO posts (slug, title, excerpt, content, featured_image, tags, author, status, date, reading_time)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING ${ALL_COLS}`,
-    [data.slug, data.title, data.excerpt, data.content, data.tags, data.author, data.status, data.date, rt]
+    [
+      data.slug, data.title, data.excerpt, data.content,
+      data.featuredImage ?? null, data.tags, data.author, data.status, data.date, rt,
+    ]
   );
   return rows[0];
 }
@@ -98,6 +105,7 @@ export interface UpdatePostInput {
   title?: string;
   excerpt?: string;
   content?: string;
+  featuredImage?: string | null;
   tags?: string[];
   author?: string;
   status?: "draft" | "published";
@@ -111,6 +119,10 @@ export async function updatePost(slug: string, data: UpdatePostInput): Promise<P
 
   if (data.title   !== undefined) { fields.push(`title = $${idx++}`);   values.push(data.title); }
   if (data.excerpt !== undefined) { fields.push(`excerpt = $${idx++}`); values.push(data.excerpt); }
+  if (data.featuredImage !== undefined) {
+    fields.push(`featured_image = $${idx++}`);
+    values.push(data.featuredImage);
+  }
   if (data.content !== undefined) {
     fields.push(`content = $${idx++}`);      values.push(data.content);
     fields.push(`reading_time = $${idx++}`); values.push(calcReadingTime(data.content));

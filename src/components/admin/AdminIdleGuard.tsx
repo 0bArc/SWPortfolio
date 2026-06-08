@@ -121,18 +121,10 @@ export default function AdminIdleGuard({ config }: { config: IdleConfig }) {
           Hi, looks like you&apos;re currently idle, you will be logged out in {warnLabel}
         </p>
         <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => void dismissWarning()}
-            className="min-w-[5.5rem] px-5 py-2.5 rounded-xl border border-white/25 bg-white/10 text-sm font-semibold text-white hover:bg-white/15 transition-colors"
-          >
+          <button type="button" className="admin-btn admin-btn--outline admin-btn--md" onClick={() => void dismissWarning()}>
             OK
           </button>
-          <button
-            type="button"
-            onClick={() => void dismissWarning()}
-            className="min-w-[5.5rem] px-5 py-2.5 rounded-xl bg-white text-sm font-semibold text-black hover:bg-gray-100 transition-colors"
-          >
+          <button type="button" className="admin-btn admin-btn--primary admin-btn--md" onClick={() => void dismissWarning()}>
             Renew
           </button>
         </div>

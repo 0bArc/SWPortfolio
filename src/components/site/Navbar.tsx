@@ -36,7 +36,7 @@ const mobileLink =
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const a = (hash: string) => (isHome ? hash : `/${hash}`);
@@ -58,15 +58,18 @@ export default function Navbar() {
       <Link href={a("#arbeid")} className={pill} onClick={close}>
         {t("nav.work")}
       </Link>
-      <Link href={a("#prosjekter")} className={pill} onClick={close}>
-        {t("nav.projects")}
-      </Link>
       <Link href="/blog" className={pill} onClick={close}>
         {t("nav.blog")}
       </Link>
       <Link href="/profil" className={`${pill} flex items-center gap-1.5`} onClick={close}>
         <GithubIcon className="w-3.5 h-3.5" />
         {t("nav.profile")}
+      </Link>
+      <Link href="/terms" className={pill} onClick={close}>
+        {t("nav.terms")}
+      </Link>
+      <Link href="/privacy" className={pill} onClick={close}>
+        {t("nav.privacy")}
       </Link>
     </>
   );
@@ -84,13 +87,6 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-0.5 text-xs font-medium text-gray-400">
             {links}
-            <div className="w-px h-4 bg-white/10 mx-1.5" />
-            <button
-              onClick={() => setLang(lang === "no" ? "en" : "no")}
-              className={`${pill} font-bold tracking-widest`}
-            >
-              {lang === "no" ? "EN" : "NO"}
-            </button>
           </div>
 
           <button
@@ -121,9 +117,6 @@ export default function Navbar() {
               <Link href={a("#arbeid")} className={mobileLink} onClick={close}>
                 {t("nav.work")}
               </Link>
-              <Link href={a("#prosjekter")} className={mobileLink} onClick={close}>
-                {t("nav.projects")}
-              </Link>
               <Link href="/blog" className={mobileLink} onClick={close}>
                 {t("nav.blog")}
               </Link>
@@ -131,17 +124,12 @@ export default function Navbar() {
                 <GithubIcon className="w-4 h-4" />
                 {t("nav.profile")}
               </Link>
-              <div className="mx-4 my-1 h-px bg-white/10" />
-              <button
-                type="button"
-                onClick={() => {
-                  setLang(lang === "no" ? "en" : "no");
-                  close();
-                }}
-                className={`${mobileLink} w-full font-bold tracking-widest`}
-              >
-                {lang === "no" ? "EN" : "NO"}
-              </button>
+              <Link href="/terms" className={mobileLink} onClick={close}>
+                {t("nav.terms")}
+              </Link>
+              <Link href="/privacy" className={mobileLink} onClick={close}>
+                {t("nav.privacy")}
+              </Link>
             </div>
           </>
         )}

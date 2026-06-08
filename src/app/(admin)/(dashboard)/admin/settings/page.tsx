@@ -120,12 +120,8 @@ export default function SettingsPage() {
             <p className="text-[12px] text-gray-600 mb-4">
               Triggers a full revalidation of all cached GitHub data.
             </p>
-            <button
-              disabled
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-red-900/40 text-red-700 hover:bg-red-500/5 transition-colors disabled:opacity-40 cursor-not-allowed"
-            >
+            <button type="button" className="admin-btn admin-btn--danger admin-btn--md" disabled>
               Revalidate cache
-              {/* TODO: wire to /api/admin/revalidate */}
             </button>
           </div>
         </section>

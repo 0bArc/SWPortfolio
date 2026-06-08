@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { slug, title, excerpt, content, tags, author, status, date } = body;
+  const { slug, title, excerpt, content, featuredImage, tags, author, status, date } = body;
   if (!slug || !title || !date) {
     return Response.json({ error: "Missing required fields: slug, title, date" }, { status: 400 });
   }
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       title: String(title),
       excerpt: excerpt ? String(excerpt) : "",
       content: content ? sanitizeMarkdownContent(String(content)) : "",
+      featuredImage: featuredImage ? String(featuredImage) : null,
       tags: parseTags(tags),
       author: author ? String(author) : "Sander Kristiansen",
       status: status === "published" ? "published" : "draft",

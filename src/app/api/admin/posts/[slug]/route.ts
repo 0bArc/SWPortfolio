@@ -39,7 +39,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { title, excerpt, content, tags, author, status, date, slug: newSlug } = body;
+  const { title, excerpt, content, featuredImage, tags, author, status, date, slug: newSlug } = body;
 
   if (newSlug !== undefined && !isValidSlug(String(newSlug))) {
     return Response.json({ error: "Invalid slug — use lowercase letters, numbers, and hyphens" }, { status: 400 });
@@ -49,6 +49,9 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     const post = await updatePost(slug, {
       ...(title     !== undefined && { title:   String(title) }),
       ...(excerpt   !== undefined && { excerpt: String(excerpt) }),
+      ...(featuredImage !== undefined && {
+        featuredImage: featuredImage ? String(featuredImage) : null,
+      }),
       ...(content   !== undefined && { content: sanitizeMarkdownContent(String(content)) }),
       ...(author    !== undefined && { author:  String(author) }),
       ...(status    !== undefined && { status:  status === "published" ? "published" : "draft" }),

@@ -7,12 +7,12 @@ import type { PostMeta } from "@/lib/posts";
 
 export default function BlogTeaser({ posts = [] }: { posts?: Pick<PostMeta, "slug" | "title" | "excerpt" | "date" | "tags">[] }) {
   const latest = posts.slice(0, 2);
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
 
   if (latest.length === 0) return null;
 
   const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleDateString(lang === "no" ? "no-NO" : "en-GB", {
+    new Date(iso).toLocaleDateString("en-GB", {
       day: "numeric",
       month: "short",
     });

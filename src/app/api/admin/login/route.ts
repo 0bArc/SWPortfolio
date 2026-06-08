@@ -9,20 +9,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const adminUsername = process.env.ADMIN_USERNAME;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const username = body.username ?? "";
-  const password = body.password ?? "";
+  const adminUsername = process.env.ADMIN_USERNAME?.trim();
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+  const username = (body.username ?? "").trim();
+  const password = (body.password ?? "").trim();
 
-  if (
-    !adminUsername || !adminPassword ||
-    !safeEqual(username, adminUsername) ||
-    !safeEqual(password, adminPassword)
-  ) {
+  if (!username || !password) {
+    return NextResponse.json({ error: "Username and password required" }, { status: 400 });
+  }
+
+  if (!adminUsername || !adminPassword) {
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
+
+  if (!safeEqual(username, adminUsername) || !safeEqual(password, adminPassword)) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const secret = process.env.ADMIN_SESSION_SECRET;
+  const secret = process.env.ADMIN_SESSION_SECRET?.trim();
   if (!secret) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }

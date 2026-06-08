@@ -39,6 +39,7 @@ export default async function EditPostPage({ params }: Props) {
           slug: post.slug,
           title: post.title,
           excerpt: post.excerpt,
+          featuredImage: post.featuredImage ?? "",
           content: post.content,
           tags: post.tags.join(", "),
           author: post.author,
