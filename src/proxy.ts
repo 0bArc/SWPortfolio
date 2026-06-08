@@ -35,11 +35,12 @@ export async function proxy(request: NextRequest) {
     "form-action 'self'",
     "frame-ancestors 'none'",
     isDev
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-      : "script-src 'self' 'unsafe-inline'",
-    "connect-src 'self'",
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com"
+      : "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+    "frame-src https://challenges.cloudflare.com",
+    "connect-src 'self' https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://avatars.githubusercontent.com https://github.com",
+    "img-src 'self' data: https: https://avatars.githubusercontent.com https://github.com",
     "font-src 'self'",
   ].join("; ");
 

@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { CookieConsentProvider } from "@/providers/CookieConsentProvider";
-import { I18nProvider } from "@/providers/I18nProvider";
-import CookieConsentBanner from "@/components/site/CookieConsentBanner";
-import Banner from "@/components/site/Banner";
+import AppProviders from "@/components/providers/AppProviders";
+import AccountSessionLoader from "@/components/providers/AccountSessionLoader";
+import Banner from "@/components/site/layout/Banner";
 import { SiteLinks } from "@/components/site-links";
 import type { CSSProperties } from "react";
 
@@ -36,17 +36,15 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} antialiased`}
       style={showBanner ? ({ "--banner-h": BANNER_H } as CSSProperties) : undefined}
+      suppressHydrationWarning
     >
-      <body className="min-h-screen selection:bg-white selection:text-black">
+      <body className="min-h-screen selection:bg-white selection:text-black" suppressHydrationWarning>
         {showBanner && <Banner message={process.env.NEXT_PUBLIC_BANNER!} height={BANNER_H} />}
         <SiteLinks />
         <CookieConsentProvider>
-          <I18nProvider>
-            {children}
-            <Suspense fallback={null}>
-              <CookieConsentBanner />
-            </Suspense>
-          </I18nProvider>
+          <Suspense fallback={<AppProviders>{children}</AppProviders>}>
+            <AccountSessionLoader>{children}</AccountSessionLoader>
+          </Suspense>
         </CookieConsentProvider>
       </body>
     </html>

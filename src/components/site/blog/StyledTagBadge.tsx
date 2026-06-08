@@ -103,7 +103,7 @@ export default function StyledTagBadge({ tag, config, href }: Props) {
   const inner = (
     <>
       <style>{keyframeCss}</style>
-      <span className={cls} style={style}>
+      <span className={cls} style={style} suppressHydrationWarning>
         <span style={textAnim ? { animation: textAnim, display: "inline-block" } : undefined}>
           {config.textEffect === "cryptic" ? display : label}
         </span>

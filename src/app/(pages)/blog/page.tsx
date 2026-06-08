@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import Navbar from "@/components/site/NavbarWrapper";
-import Footer from "@/components/site/FooterWrapper";
+import Navbar from "@/components/site/layout/NavbarWrapper";
+import Footer from "@/components/site/layout/FooterWrapper";
 import { listPublishedPosts, getAllTags } from "@/lib/blog/posts";
 import { translations, get } from "@/lib/i18n";
-import TagBadge from "@/components/site/TagBadge";
+import TagBadge from "@/components/site/blog/TagBadge";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

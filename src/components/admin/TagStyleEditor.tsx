@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Plus, Save, Trash2, X } from "lucide-react";
-import StyledTagBadge from "@/components/site/StyledTagBadge";
+import StyledTagBadge from "@/components/site/blog/StyledTagBadge";
 import type { TagKeyframe, TagStyleConfig, TagStyleRecord, TagTextEffect } from "@/lib/tags/types";
 import { DEFAULT_TAG_STYLE, normalizeTagConfig } from "@/lib/tags/presets";
 import { MOTION_PRESETS } from "@/lib/tags/motion-presets";

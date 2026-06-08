@@ -107,7 +107,7 @@ export async function upsertVisitorCookies(
     `INSERT INTO ${SITE_VISITORS_TABLE} (visitor_id, cookies)
      VALUES ($1, $2::jsonb)
      ON CONFLICT (visitor_id) DO UPDATE SET
-       cookies = ${SITE_VISITORS_TABLE}.cookies || EXCLUDED.cookies,
+       cookies = EXCLUDED.cookies,
        updated_at = NOW()
      RETURNING cookies`,
     [visitorId, JSON.stringify(merged)]

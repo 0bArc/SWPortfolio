@@ -39,9 +39,7 @@ export async function GET() {
     }
     const prefs = await getVisitorCookies(visitorId);
     if (!prefs?.decided) {
-      const res = NextResponse.json({ decided: false, cookies: null, purged: true });
-      clearVisitorCookie(res);
-      return res;
+      return NextResponse.json({ decided: false, cookies: null });
     }
     return NextResponse.json({ decided: true, cookies: prefs });
   } catch {
@@ -72,10 +70,8 @@ export async function POST(req: Request) {
     const prefs = prefsFromAction(action, pickCookiePatch(body));
     const saved = await upsertVisitorCookies(visitorId, prefs);
 
-    const res = NextResponse.json({ cookies: saved });
-    if (created) {
-      res.cookies.set(VISITOR_COOKIE, visitorId, visitorCookieOpts());
-    }
+    const res = NextResponse.json({ decided: !!saved.decided, cookies: saved });
+    res.cookies.set(VISITOR_COOKIE, visitorId, visitorCookieOpts());
     return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Failed to save consent";

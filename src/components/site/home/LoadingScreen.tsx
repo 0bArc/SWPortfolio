@@ -7,9 +7,11 @@ import { translations } from "@/lib/i18n";
 
 const FADE_MS = 400;
 
+type Phase = "pending" | "show" | "fade" | "done";
+
 export default function LoadingScreen() {
   const { t } = useI18n();
-  const [phase, setPhase] = useState<"init" | "show" | "fade" | "done">("init");
+  const [phase, setPhase] = useState<Phase>("pending");
   const [msgIdx, setMsgIdx] = useState(0);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function LoadingScreen() {
     };
   }, [phase]);
 
-  if (phase === "done") return null;
+  if (phase === "pending" || phase === "done") return null;
 
   const msgs = translations.loading.messages;
 

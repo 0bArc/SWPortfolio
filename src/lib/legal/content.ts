@@ -99,7 +99,7 @@ const terms: LegalDoc = {
       paragraphs: [
         "{domain} is a personal portfolio and blog operated by {owner}.",
         "The site presents personal projects, technical work, articles, and related content.",
-        "Unless stated otherwise, the site does not provide user accounts, payments, subscriptions, or commercial platform services.",
+        "The site offers optional free visitor accounts for commenting on blog posts. There are no payments, subscriptions, or commercial platform services.",
       ],
     },
     {
@@ -135,19 +135,29 @@ const terms: LegalDoc = {
       ],
     },
     {
-      heading: "4. Acceptable use",
+      heading: "4. Visitor accounts",
+      paragraphs: [
+        "You may create a free account to comment on published blog posts. Accounts require a username, display name, and password. Email verification is not offered at this time; sign-up is protected by a captcha instead.",
+        "Each account receives a public profile page at /u/your-username. You are responsible for your account credentials and for activity under your account.",
+        "Comments must be lawful and respectful. {owner} may remove comments or suspend accounts that abuse the service, spam, harass others, or violate these terms.",
+        "Optional avatar images must be hosted at HTTPS URLs you provide. Connected external login providers (bridges) may be added later; existing password accounts remain valid.",
+      ],
+    },
+    {
+      heading: "5. Acceptable use",
       paragraphs: [],
       listGroups: [
         {
           intro: "You agree not to:",
           items: [
             "Attempt unauthorized access to admin areas, servers, databases, or infrastructure",
-            "Circumvent security measures or access restrictions",
+            "Circumvent security measures, captcha, or access restrictions",
             "Interfere with the operation or availability of the website",
             "Introduce malware or harmful code",
             "Conduct denial-of-service attacks or similar disruptive activity",
             "Use automated systems in a way that creates excessive load",
             "Use the website for unlawful purposes",
+            "Post abusive, illegal, or misleading comments",
           ],
         },
       ],
@@ -156,7 +166,7 @@ const terms: LegalDoc = {
       ],
     },
     {
-      heading: "5. Third-party links and services",
+      heading: "6. Third-party links and services",
       paragraphs: [
         "This site may link to third-party websites, repositories, APIs, or services. Accessing them is at your own risk.",
         "{owner} does not control third-party content, availability, security, or privacy practices.",
@@ -164,7 +174,7 @@ const terms: LegalDoc = {
       ],
     },
     {
-      heading: "6. Content disclaimer",
+      heading: "7. Content disclaimer",
       paragraphs: [
         "Content on this site is provided for general information and education only. It is not legal, financial, medical, or professional advice.",
         "You are responsible for how you use information from this site. Mentioning a tool, product, or topic does not mean {owner} endorses it.",
@@ -172,26 +182,26 @@ const terms: LegalDoc = {
       ],
     },
     {
-      heading: "7. Limitation of liability",
+      heading: "8. Limitation of liability",
       paragraphs: [
         "To the extent permitted by applicable law, {owner} is not liable for indirect, incidental, or consequential loss arising from use of — or inability to use — this website.",
         "Nothing in these terms excludes or limits liability where such exclusion or limitation is prohibited by mandatory applicable law.",
       ],
     },
     {
-      heading: "8. Changes",
+      heading: "9. Changes",
       paragraphs: [
         "{owner} may update the site or these terms at any time. Updated terms take effect when published on this page. Continued use after an update means you accept the revised terms.",
       ],
     },
     {
-      heading: "9. Governing law",
+      heading: "10. Governing law",
       paragraphs: [
         "These terms are governed by Norwegian law. Disputes should first be resolved amicably where possible. If that fails, Norwegian courts have jurisdiction, except where mandatory law requires otherwise.",
       ],
     },
     {
-      heading: "10. Contact",
+      heading: "11. Contact",
       paragraphs: [
         "Questions about these terms may be sent to {email}.",
         "For information about personal data, see the Privacy Policy.",
@@ -254,7 +264,7 @@ const privacy: LegalDoc = {
     {
       heading: "2. What we do not collect",
       paragraphs: [
-        "The site is not a social platform. There is no visitor registration, visitor login, contact form that stores messages in a database, newsletter, payments, or ad/tracking platforms such as Google Analytics or Meta Pixel.",
+        "We do not verify email addresses, run newsletters, process payments, or use ad/tracking platforms such as Google Analytics or Meta Pixel.",
         "The Contact link opens your own email client. We do not store your message until you send it yourself.",
       ],
     },
@@ -268,43 +278,58 @@ const privacy: LegalDoc = {
         "Blog images — images uploaded by the administrator are stored on the server as WebP files and served via `/api/images/`",
         "GitHub data — public profile and repository information is fetched from GitHub's API as needed and may be temporarily cached; we do not permanently store GitHub data in our own database",
         "Cookie consent — essential cookies and optional analytics preferences are stored in a database with a `decidedAt` unix timestamp when you accept or decline",
+        "Visitor accounts — if you sign up: username, display name, password (stored as a salted hash, never plain text), optional avatar URL, signup IP, last login IP, session tokens (hashed in the database), and an activity log (sign-up, login, comments)",
+        "Comments — text you post on blog posts, linked to your account and shown publicly with your username and display name",
+        "Captcha — Cloudflare Turnstile is used on sign-up to reduce abuse; Turnstile may process technical signals according to Cloudflare's privacy policy",
       ],
     },
     {
-      heading: "4. Admin access (site owner only)",
+      heading: "4. Visitor accounts and sessions",
+      paragraphs: [
+        "Accounts are optional and used to comment on blog posts. On sign-up or login, an httpOnly session cookie (`account_session`) is set. Session tokens are stored hashed in the database with expiry and IP address.",
+        "Public profile pages show your display name, username, optional avatar, and join date. Passwords are never shown.",
+        "External login bridges (e.g. GitHub) may be added later; bridge tokens would be stored in a separate table linked to your account.",
+      ],
+    },
+    {
+      heading: "5. Admin access (site owner only)",
       paragraphs: [
         "A password-protected admin area is used exclusively by {owner} to publish posts. On login, an httpOnly session cookie (`admin_session`) signed with HMAC is set.",
         "This cookie applies only to the site owner and does not contain personal data about visitors.",
       ],
     },
     {
-      heading: "5. Purpose and legal basis",
+      heading: "6. Purpose and legal basis",
       paragraphs: ["We process data for the following purposes:"],
       list: [
         "Displaying the site and blog content (legitimate interest)",
         "Storing cookie consent choices (consent)",
         "Operating, troubleshooting, and protecting the site against abuse (legitimate interest)",
         "Managing and publishing content (processing by the site owner)",
+        "Operating visitor accounts and comments (contract / legitimate interest)",
+        "Preventing sign-up abuse via captcha (legitimate interest)",
       ],
     },
     {
-      heading: "6. Sharing with third parties",
+      heading: "7. Sharing with third parties",
       paragraphs: [
         "We do not sell personal data.",
-        "Data may be processed by technical subprocessors such as hosting (server/database) and GitHub (when the profile page is shown), only as needed to deliver the site.",
+        "Data may be processed by technical subprocessors such as hosting (server/database), Cloudflare Turnstile (sign-up captcha), and GitHub (when the profile page is shown), only as needed to deliver the site.",
       ],
     },
     {
-      heading: "7. Retention",
+      heading: "8. Retention",
       paragraphs: [
         "Cookie consent records are kept for up to 12 months from when you gave consent (`decidedAt`). After that, consent data is automatically removed and you will be asked to choose again.",
         "Server logs are kept according to the hosting provider's routines, usually for a limited time.",
         "Blog content and uploaded images are kept until deleted by the administrator or until the server is rebuilt.",
         "Admin sessions expire after inactivity, when you log out, or when the server is purged.",
+        "Account session tokens expire after 30 days or when you sign out. Account data is kept until you request deletion or the account is removed by the site owner.",
+        "Comments remain visible until deleted by you (when available) or by the site owner.",
       ],
     },
     {
-      heading: "8. Your rights",
+      heading: "9. Your rights",
       paragraphs: [
         "Under the GDPR you may have rights to access, rectification, erasure, restriction, objection, and data portability where data about you is concerned and where applicable law requires it.",
         "Because we normally do not collect identifiable data about visitors beyond limited technical records, many requests may relate to logs held by the hosting provider.",
@@ -312,20 +337,20 @@ const privacy: LegalDoc = {
       ],
     },
     {
-      heading: "9. Security",
+      heading: "10. Security",
       paragraphs: [
         "Reasonable technical and organizational measures are used to protect data, including password-protected admin access, signed session cookies with secure flags (httpOnly, secure in production, SameSite), and idle timeout.",
         "No website or system is completely secure, but we work to keep the site maintained and protected.",
       ],
     },
     {
-      heading: "10. Changes",
+      heading: "11. Changes",
       paragraphs: [
         "This policy may be updated from time to time. The latest version is always published on this page with an updated date.",
       ],
     },
     {
-      heading: "11. Contact",
+      heading: "12. Contact",
       paragraphs: [
         "Questions about this policy may be sent to {email}.",
         "For general site use rules, see the Terms of Service.",

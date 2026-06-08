@@ -46,18 +46,17 @@ function readLocal(): CookiePreferences | null {
   }
 }
 
-function clearLocalConsent() {
-  localStorage.removeItem(STORAGE_KEY);
-}
-
 function writeLocal(prefs: CookiePreferences) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+  } catch {
+    // Storage blocked — server cookie remains source of truth
+  }
 }
 
 export function CookieConsentProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [prefs, setPrefs] = useState<CookiePreferences>({ ...COOKIE_PREF_DEFAULTS });
-
   useEffect(() => {
     const local = readLocal();
     if (local) {
@@ -66,19 +65,10 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
       return;
     }
 
-    fetch("/api/cookies")
+    fetch("/api/cookies", { credentials: "same-origin" })
       .then((r) => r.json())
-      .then((data: { cookies?: CookiePreferences | null; decided?: boolean; purged?: boolean }) => {
-        if (data.purged) {
-          clearLocalConsent();
-          setPrefs({ ...COOKIE_PREF_DEFAULTS });
-          return;
-        }
-        if (data.decided && data.cookies) {
-          if (isConsentExpired(data.cookies)) {
-            clearLocalConsent();
-            return;
-          }
+      .then((data: { cookies?: CookiePreferences | null; decided?: boolean }) => {
+        if (data.decided && data.cookies && !isConsentExpired(data.cookies)) {
           setPrefs(data.cookies);
           writeLocal(data.cookies);
         }
@@ -90,19 +80,23 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
   const saveConsent = useCallback(
     async (action: "accept" | "deny" | "modify", patch?: Partial<CookiePreferences>) => {
       const fallback = prefsFromActionLocal(action, patch);
+      setPrefs(fallback);
+      writeLocal(fallback);
+
       try {
         const res = await fetch("/api/cookies", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
           body: JSON.stringify({ action, ...patch }),
         });
-        const data = (await res.json()) as { cookies?: CookiePreferences };
-        const next = res.ok && data.cookies ? data.cookies : fallback;
-        setPrefs(next);
-        writeLocal(next);
+        const data = (await res.json()) as { cookies?: CookiePreferences; decided?: boolean };
+        if (res.ok && data.cookies?.decided) {
+          setPrefs(data.cookies);
+          writeLocal(data.cookies);
+        }
       } catch {
-        setPrefs(fallback);
-        writeLocal(fallback);
+        // Optimistic local save already applied
       }
     },
     []

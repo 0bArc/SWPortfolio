@@ -13,7 +13,7 @@ import {
   type ContentBlock,
 } from "@/lib/markdown/render";
 import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
-import BlogProse from "@/components/site/BlogProse";
+import BlogProse from "@/components/site/blog/BlogProse";
 import EditorApiButton, { uploadEditorImages } from "@/components/admin/EditorApiButton";
 import EditorBlockControls, { EditorSizeFields } from "@/components/admin/EditorBlockControls";
 import {

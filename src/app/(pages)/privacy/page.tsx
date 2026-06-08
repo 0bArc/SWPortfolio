@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Navbar from "@/components/site/NavbarWrapper";
-import Footer from "@/components/site/FooterWrapper";
-import LegalDocument from "@/components/site/LegalDocument";
-import { LegalPageFallback } from "@/components/site/LegalPageFallback";
+import Navbar from "@/components/site/layout/NavbarWrapper";
+import Footer from "@/components/site/layout/FooterWrapper";
+import LegalDocument from "@/components/site/legal/LegalDocument";
+import { LegalPageFallback } from "@/components/site/legal/LegalPageFallback";
 import { getPrivacy } from "@/lib/legal/content";
 import { CONTACT_EMAIL, SITE_OWNER } from "@/lib/env";
 

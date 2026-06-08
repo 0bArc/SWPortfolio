@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Star, GitFork, AlertCircle, Eye, ExternalLink, GitBranch } from "lucide-react";
 import { useI18n } from "@/providers/I18nProvider";
-import ActivityHeatmap from "@/components/site/ActivityHeatmap";
-import CommitList from "@/components/site/CommitList";
+import ActivityHeatmap from "./ActivityHeatmap";
+import CommitList from "./CommitList";
 import type { RepoData, Branch } from "@/lib/github";
 
 interface RepoResponse {
@@ -34,8 +33,7 @@ function Skeleton() {
   );
 }
 
-export default function ProjectPageClient() {
-  const { slug } = useParams<{ slug: string }>();
+export default function ProjectPageClient({ slug }: { slug: string }) {
   const { t } = useI18n();
   const [repo, setRepo] = useState<RepoResponse | null>(null);
   const [missing, setMissing] = useState(false);

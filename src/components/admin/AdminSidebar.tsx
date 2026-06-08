@@ -13,12 +13,14 @@ import {
   Menu,
   X,
   Tags,
+  Users,
 } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/admin/tags", label: "Tags", icon: Tags, exact: false },
+  { href: "/admin/users", label: "Users", icon: Users, exact: false },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ];
 

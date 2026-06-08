@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SITE_OWNER } from "@/lib/env";
 import { useI18n } from "@/providers/I18nProvider";
+import AccountNav from "@/components/site/account/AccountNav";
+import NotificationNav from "@/components/site/notifications/NotificationNav";
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -30,7 +32,7 @@ function CloseIcon({ className }: { className?: string }) {
   );
 }
 
-const pill = "px-3 py-1.5 rounded-lg hover:bg-white/8 hover:text-white transition-all";
+const pill = "px-2.5 py-1 rounded-lg hover:bg-white/8 hover:text-white transition-all";
 const mobileLink =
   "flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-300 hover:bg-white/8 hover:text-white transition-colors";
 
@@ -61,16 +63,17 @@ export default function Navbar() {
       <Link href="/blog" className={pill} onClick={close}>
         {t("nav.blog")}
       </Link>
-      <Link href="/profil" className={`${pill} flex items-center gap-1.5`} onClick={close}>
+      <Link
+        href="/profil"
+        className={`${pill} flex items-center gap-1.5`}
+        onClick={close}
+        title={t("nav.profile")}
+      >
         <GithubIcon className="w-3.5 h-3.5" />
-        {t("nav.profile")}
+        <span className="hidden lg:inline">{t("nav.profile")}</span>
       </Link>
-      <Link href="/terms" className={pill} onClick={close}>
-        {t("nav.terms")}
-      </Link>
-      <Link href="/privacy" className={pill} onClick={close}>
-        {t("nav.privacy")}
-      </Link>
+      <NotificationNav pillClass={pill} />
+      <AccountNav pillClass={pill} />
     </>
   );
 
@@ -124,12 +127,10 @@ export default function Navbar() {
                 <GithubIcon className="w-4 h-4" />
                 {t("nav.profile")}
               </Link>
-              <Link href="/terms" className={mobileLink} onClick={close}>
-                {t("nav.terms")}
-              </Link>
-              <Link href="/privacy" className={mobileLink} onClick={close}>
-                {t("nav.privacy")}
-              </Link>
+              <div className="px-4 py-2 flex items-center gap-2">
+                <NotificationNav />
+              </div>
+              <AccountNav pillClass={mobileLink} />
             </div>
           </>
         )}

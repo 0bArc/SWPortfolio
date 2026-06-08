@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import StyledTagBadge from "@/components/site/StyledTagBadge";
+import StyledTagBadge from "@/components/site/blog/StyledTagBadge";
 import type { TagStyleRecord } from "@/lib/tags/types";
 import { getTagVariant } from "@/lib/tags/variants";
 

@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { cacheLife } from "next/cache";
-import Navbar from "@/components/site/NavbarWrapper";
-import Hero from "@/components/site/Hero";
-import AboutMe from "@/components/site/AboutMe";
-import Experience from "@/components/site/Experience";
-import ProjectsClient from "@/components/site/ProjectsClient";
-import Footer from "@/components/site/FooterWrapper";
-import LoadingScreen from "@/components/site/LoadingScreen";
-import ScrollReveal from "@/components/site/ScrollReveal";
+import Navbar from "@/components/site/layout/NavbarWrapper";
+import Hero from "@/components/site/home/Hero";
+import AboutMe from "@/components/site/home/AboutMe";
+import Experience from "@/components/site/home/Experience";
+import ProjectsClient from "@/components/site/home/ProjectsClient";
+import Footer from "@/components/site/layout/FooterWrapper";
+import LoadingScreen from "@/components/site/home/LoadingScreen";
+import ScrollReveal from "@/components/site/home/ScrollReveal";
 import { getRepoList } from "@/lib/github";
 import { fetchOG } from "@/lib/og";
 
