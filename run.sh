@@ -33,14 +33,39 @@ parse_db_url() {
   DB_NAME="${DB_NAME:-blog}"
 }
 
+apply_migrations() {
+  info "Applying additive DB migrations (data preserved)..."
+  if command -v psql &>/dev/null && [[ -n "${DATABASE_URL:-}" ]]; then
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f src/lib/db/migrate.sql
+  elif command -v docker &>/dev/null && docker ps --format '{{.Names}}' | grep -qx blog-db; then
+    parse_db_url
+    docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/lib/db/migrate.sql
+  elif command -v psql &>/dev/null; then
+    parse_db_url
+    sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f src/lib/db/migrate.sql
+  else
+    warn "No psql/docker — skipping migrations (app will migrate on first request)"
+    return
+  fi
+  ok "Migrations applied"
+}
+
+apply_seed() {
+  info "Applying dev seed (skipped rows that already exist)..."
+  if command -v psql &>/dev/null && [[ -n "${DATABASE_URL:-}" ]]; then
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f src/lib/db/seed.sql
+  elif command -v docker &>/dev/null && docker ps --format '{{.Names}}' | grep -qx blog-db; then
+    parse_db_url
+    docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/lib/db/seed.sql
+  else
+    parse_db_url
+    sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f src/lib/db/seed.sql
+  fi
+  ok "Seed applied"
+}
+
 apply_schema() {
-  sudo -u postgres psql -d "$DB_NAME" < src/lib/db/schema.sql
-  sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 <<SQL
-GRANT ALL ON ALL TABLES IN SCHEMA public TO "${DB_USER}";
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO "${DB_USER}";
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "${DB_USER}";
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO "${DB_USER}";
-SQL
+  apply_migrations
 }
 
 ensure_native_db() {
@@ -63,6 +88,12 @@ ensure_native_db() {
   fi
 
   apply_schema
+  sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 <<SQL
+GRANT ALL ON ALL TABLES IN SCHEMA public TO "${DB_USER}";
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO "${DB_USER}";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO "${DB_USER}";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO "${DB_USER}";
+SQL
 }
 
 ensure_docker_db() {
@@ -84,10 +115,28 @@ ensure_docker_db() {
   ok "Postgres ready"
   docker exec blog-db psql -U "$DB_USER" -d postgres \
     -c "ALTER USER \"${DB_USER}\" WITH PASSWORD '${DB_PASS}';" >/dev/null 2>&1 || true
-  docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" < src/lib/db/schema.sql
+  docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/lib/db/migrate.sql
 }
 
-ensure_node() {
+ensure_uploads() {
+  mkdir -p uploads/blog
+  ok "Uploads dir ready (uploads/blog)"
+}
+
+db_stats() {
+  if [[ -z "${DATABASE_URL:-}" ]]; then
+    warn "DATABASE_URL not set"
+    return
+  fi
+  if ! command -v psql &>/dev/null; then
+    return
+  fi
+  local posts published uploads
+  posts=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM posts" 2>/dev/null || echo "?")
+  published=$(psql "$DATABASE_URL" -tAc "SELECT COUNT(*) FROM posts WHERE status='published'" 2>/dev/null || echo "?")
+  uploads=$(find uploads/blog -type f 2>/dev/null | wc -l | tr -d ' ')
+  info "DB: ${posts} posts (${published} published) · ${uploads} uploaded images"
+}
   command -v node &>/dev/null || die "Node.js not found — run './run.sh setup' first"
   ok "Node $(node -v)"
 }
@@ -147,37 +196,49 @@ cmd_db() {
   else
     die "Need psql or Docker — run './run.sh setup' or install Docker"
   fi
+  if [[ "${2:-}" == "--seed" ]]; then
+    apply_seed
+  fi
+  db_stats
   ok "DB ready (${DATABASE_URL:-postgresql://postgres:password@localhost:5432/blog})"
 }
 
-cmd_deploy() {
+cmd_migrate() {
+  [[ -f .env.local ]] || die ".env.local missing"
+  apply_migrations
+  db_stats
+}
+
+cmd_update() {
+  ensure_node
   ensure_pm2
-  info "Pulling..."
-  git pull
+  [[ -f .env.local ]] || die ".env.local missing — copy .env.example to .env.local"
 
-  info "Installing deps..."
-  npm ci
-  echo "$(md5sum package-lock.json | cut -d' ' -f1)" > .install-stamp
+  info "Pulling latest code..."
+  git pull --ff-only
 
-  info "Building..."
-  npm run build
-  touch .build-stamp
+  ensure_deps
+  apply_migrations
+  ensure_uploads
+  ensure_build
 
-  if pm2 list | grep -q "$APP"; then
-    pm2 delete "$APP" 2>/dev/null || true
+  if pm2 list 2>/dev/null | grep -q "$APP"; then
+    pm2 restart "$APP"
+  else
+    pm2 start npm --name "$APP" -- start
+    pm2 save
   fi
-  pm2 start npm --name "$APP" -- start
-  pm2 save
   run_hook restart
 
   sleep 2
+  db_stats
   if curl -sf -o /dev/null "http://127.0.0.1:${APP_PORT}/"; then
     ok "App responding on :${APP_PORT}"
   else
     warn "App NOT responding on :${APP_PORT} — run './run.sh logs'"
   fi
 
-  ok "Deployed"
+  ok "Update done — existing DB rows and uploads/blog files are preserved"
   pm2 status "$APP"
 }
 
@@ -215,9 +276,11 @@ cmd_install() {
   [[ -f .env.local ]] || die ".env.local missing — copy .env.example to .env.local"
 
   ensure_deps
+  apply_migrations
+  ensure_uploads
   ensure_build
 
-  if pm2 list | grep -q "$APP"; then
+  if pm2 list 2>/dev/null | grep -q "$APP"; then
     pm2 restart "$APP"
   else
     pm2 start npm --name "$APP" -- start
@@ -230,7 +293,8 @@ cmd_install() {
     ok "PM2 autostart configured"
   fi
   run_hook start
-  ok "Install done"
+  db_stats
+  ok "Install done (first-time setup — use './run.sh update' for future deploys)"
 }
 
 cmd_auto() {
@@ -294,10 +358,14 @@ cmd_doctor() {
     parse_db_url
     if command -v psql &>/dev/null; then
       psql "$DATABASE_URL" -c "SELECT 1" &>/dev/null && ok "Postgres OK" || warn "Postgres connection failed"
+      db_stats
     fi
   else
     warn "DATABASE_URL not set in .env.local"
   fi
+  local uploads
+  uploads=$(find uploads/blog -type f 2>/dev/null | wc -l | tr -d ' ')
+  ok "Upload files in uploads/blog: ${uploads}"
 }
 
 cmd_logs()   { pm2 logs "$APP" --lines "${2:-50}"; }
@@ -310,11 +378,13 @@ cmd_help() {
   echo -e "  ${B}swportfolio — run.sh${N}"
   echo ""
   echo "  auto          First-time server setup (Node + PM2 + Nginx + install)"
+  echo "  update         git pull + migrate + build + PM2 restart (safe — keeps data)"
+  echo "  migrate        Apply additive DB migrations only"
   echo "  dev           Local dev server"
-  echo "  db            Create DB + apply schema (uses DATABASE_URL from .env.local)"
-  echo "  deploy        git pull + build + PM2 restart"
+  echo "  db [--seed]   Create DB + migrate (+ optional dev seed)"
+  echo "  deploy        Alias for update"
   echo "  setup         Install system deps (Node, PM2, Nginx, Postgres)"
-  echo "  install       npm ci + build + PM2 start"
+  echo "  install       First-time app install (migrate + build + PM2 start)"
   echo "  nginx         Write Nginx reverse-proxy config"
   echo "  doctor        Check nginx + PM2 + app + DB"
   echo "  logs [n]      PM2 logs (default 50 lines)"
@@ -327,8 +397,10 @@ cmd_help() {
 case "$CMD" in
   auto)    cmd_auto ;;
   dev)     cmd_dev ;;
-  db)      cmd_db ;;
-  deploy)  cmd_deploy ;;
+  db)      cmd_db "$@" ;;
+  migrate) cmd_migrate ;;
+  update)  cmd_update ;;
+  deploy)  cmd_update ;;
   setup)   cmd_setup ;;
   install) cmd_install ;;
   nginx)   cmd_nginx ;;
