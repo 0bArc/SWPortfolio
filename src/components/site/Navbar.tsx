@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { SITE_OWNER } from "@/lib/env";
 import { useI18n } from "@/providers/I18nProvider";
 
@@ -13,48 +14,137 @@ function GithubIcon({ className }: { className?: string }) {
   );
 }
 
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 const pill = "px-3 py-1.5 rounded-lg hover:bg-white/8 hover:text-white transition-all";
+const mobileLink =
+  "flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-300 hover:bg-white/8 hover:text-white transition-colors";
 
 export default function Navbar() {
+  const [open, setOpen] = useState(false);
   const { t, lang, setLang } = useI18n();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const a = (hash: string) => (isHome ? hash : `/${hash}`);
+  const close = () => setOpen(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  const links = (
+    <>
+      <Link href={a("#arbeid")} className={pill} onClick={close}>
+        {t("nav.work")}
+      </Link>
+      <Link href={a("#prosjekter")} className={pill} onClick={close}>
+        {t("nav.projects")}
+      </Link>
+      <Link href="/blog" className={pill} onClick={close}>
+        {t("nav.blog")}
+      </Link>
+      <Link href="/profil" className={`${pill} flex items-center gap-1.5`} onClick={close}>
+        <GithubIcon className="w-3.5 h-3.5" />
+        {t("nav.profile")}
+      </Link>
+    </>
+  );
 
   return (
     <nav style={{ top: "var(--banner-h, 0px)" }} className="fixed w-full z-50 glass border-b border-white/[0.06]">
-      <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-        <Link
-          href="/"
-          className="text-sm font-bold tracking-tighter hover:text-gray-300 transition-colors"
-        >
-          {SITE_OWNER.toUpperCase()}
-        </Link>
-
-        <div className="flex items-center gap-0.5 text-xs font-medium text-gray-400">
-          <Link href={a("#arbeid")} className={pill}>
-            {t("nav.work")}
-          </Link>
-          <Link href={a("#prosjekter")} className={pill}>
-            {t("nav.projects")}
-          </Link>
-          <Link href="/blog" className={pill}>
-            {t("nav.blog")}
-          </Link>
-          <Link href="/profil" className={`${pill} flex items-center gap-1.5`}>
-            <GithubIcon className="w-3.5 h-3.5" />
-            {t("nav.profile")}
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="h-14 flex items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="min-w-0 text-xs sm:text-sm font-bold tracking-tighter leading-tight hover:text-gray-300 transition-colors"
+          >
+            {SITE_OWNER.toUpperCase()}
           </Link>
 
-          <div className="w-px h-4 bg-white/10 mx-1.5" />
+          <div className="hidden md:flex items-center gap-0.5 text-xs font-medium text-gray-400">
+            {links}
+            <div className="w-px h-4 bg-white/10 mx-1.5" />
+            <button
+              onClick={() => setLang(lang === "no" ? "en" : "no")}
+              className={`${pill} font-bold tracking-widest`}
+            >
+              {lang === "no" ? "EN" : "NO"}
+            </button>
+          </div>
 
           <button
-            onClick={() => setLang(lang === "no" ? "en" : "no")}
-            className={`${pill} font-bold tracking-widest`}
+            type="button"
+            className="md:hidden shrink-0 p-2 -mr-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-colors"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            aria-label={open ? "Close menu" : "Open menu"}
           >
-            {lang === "no" ? "EN" : "NO"}
+            {open ? <CloseIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
           </button>
         </div>
+
+        {open && (
+          <>
+            <button
+              type="button"
+              className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-black/70 mobile-nav-backdrop"
+              style={{ top: "calc(var(--banner-h, 0px) + 3.5rem)" }}
+              onClick={close}
+              aria-label="Close menu"
+            />
+            <div
+              id="mobile-nav"
+              className="md:hidden absolute left-0 right-0 top-full z-50 mobile-nav-panel border-b border-white/[0.08] py-1 shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+            >
+              <Link href={a("#arbeid")} className={mobileLink} onClick={close}>
+                {t("nav.work")}
+              </Link>
+              <Link href={a("#prosjekter")} className={mobileLink} onClick={close}>
+                {t("nav.projects")}
+              </Link>
+              <Link href="/blog" className={mobileLink} onClick={close}>
+                {t("nav.blog")}
+              </Link>
+              <Link href="/profil" className={mobileLink} onClick={close}>
+                <GithubIcon className="w-4 h-4" />
+                {t("nav.profile")}
+              </Link>
+              <div className="mx-4 my-1 h-px bg-white/10" />
+              <button
+                type="button"
+                onClick={() => {
+                  setLang(lang === "no" ? "en" : "no");
+                  close();
+                }}
+                className={`${mobileLink} w-full font-bold tracking-widest`}
+              >
+                {lang === "no" ? "EN" : "NO"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </nav>
   );

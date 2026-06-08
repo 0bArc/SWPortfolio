@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { renderBlogMarkdown } from "@/lib/markdown-render";
 import { sanitizeMarkdownContent } from "@/lib/markdown-urls";
 import BlogProse from "@/components/site/BlogProse";
-import "highlight.js/styles/github-dark.css";
 
 type SlashAction = "image" | "carousel";
 

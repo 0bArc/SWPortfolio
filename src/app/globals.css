@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "highlight.js/styles/github-dark.css";
 
 .site-meta { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
 
@@ -220,11 +219,12 @@
   /* Code block */
   .prose-blog pre {
     @apply rounded-xl mb-6 overflow-x-auto text-[13px] leading-relaxed;
-    background: rgb(13 17 23);
-    border: 1px solid rgba(255,255,255,0.07);
+    background: #0a0a0a;
+    color: #e5e5e5;
+    border: 1px solid rgba(255,255,255,0.08);
     padding: 1.25rem 1.5rem;
   }
-  .prose-blog pre code { background: transparent !important; border: none !important; padding: 0 !important; font-size: inherit; }
+  .prose-blog pre code { background: transparent !important; border: none !important; padding: 0 !important; font-size: inherit; color: inherit; }
 
   /* Lists */
   .prose-blog ul { list-style: none; padding-left: 0; margin-bottom: 1.5rem; }
@@ -351,11 +351,39 @@
     from { opacity: 0; transform: scale(0.92) translateY(-6px); }
     to   { opacity: 1; transform: scale(1)    translateY(0);    }
   }
-  /* hljs — strip its own padding/bg so our pre wrapper controls it */
-  .hljs { background: transparent !important; padding: 0 !important; }
-  .prose-blog pre .hljs { color: inherit; }
-  /* Editor preview uses a slightly different bg */
-  .preview-blog pre { background: rgb(13 17 23); border: 1px solid rgba(255,255,255,0.07); }
+  /* hljs — neutral black theme (no blue github tint) */
+  .hljs { background: transparent !important; padding: 0 !important; color: #e5e5e5; }
+  .hljs-comment, .hljs-quote, .hljs-formula { color: #6b7280; font-style: italic; }
+  .hljs-keyword, .hljs-selector-tag, .hljs-doctag, .hljs-meta .hljs-keyword { color: #d4d4d4; }
+  .hljs-title, .hljs-section, .hljs-title.class_, .hljs-title.function_ { color: #ffffff; font-weight: 600; }
+  .hljs-string, .hljs-regexp, .hljs-meta .hljs-string { color: #a3a3a3; }
+  .hljs-attr, .hljs-attribute, .hljs-literal, .hljs-number, .hljs-operator,
+  .hljs-variable, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id,
+  .hljs-built_in, .hljs-type, .hljs-symbol { color: #d4d4d4; }
+  .hljs-name, .hljs-selector-pseudo, .hljs-subst { color: #e5e5e5; }
+  .hljs-bullet, .hljs-emphasis { color: #a3a3a3; }
+  .hljs-strong { color: #ffffff; font-weight: 700; }
+  .hljs-addition { color: #86efac; background: rgba(34, 197, 94, 0.12); }
+  .hljs-deletion { color: #fca5a5; background: rgba(239, 68, 68, 0.12); }
+
+  .mobile-nav-panel {
+    background: #050505;
+    animation: mobileNavPanelIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: top center;
+  }
+  .mobile-nav-panel > a,
+  .mobile-nav-panel > button {
+    animation: mobileNavLinkIn 0.2s ease both;
+  }
+  .mobile-nav-panel > a:nth-child(1),
+  .mobile-nav-panel > button:nth-child(1) { animation-delay: 0.03s; }
+  .mobile-nav-panel > a:nth-child(2) { animation-delay: 0.05s; }
+  .mobile-nav-panel > a:nth-child(3) { animation-delay: 0.07s; }
+  .mobile-nav-panel > a:nth-child(4) { animation-delay: 0.09s; }
+  .mobile-nav-panel > button:last-child { animation-delay: 0.13s; }
+  .mobile-nav-backdrop {
+    animation: mobileNavBackdropIn 0.2s ease-out both;
+  }
   .reveal-delay-1 { transition-delay: 0.06s; }
   .reveal-delay-2 { transition-delay: 0.12s; }
   .reveal-delay-3 { transition-delay: 0.18s; }
@@ -414,4 +442,19 @@
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes mobileNavBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mobileNavPanelIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes mobileNavLinkIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
 }

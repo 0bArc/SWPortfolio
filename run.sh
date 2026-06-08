@@ -155,24 +155,19 @@ cmd_deploy() {
   info "Pulling..."
   git pull
 
-  if git diff --name-only HEAD@{1} HEAD | grep -q "package-lock.json"; then
-    info "Lockfile changed — npm ci..."
-    npm ci
-    echo "$(md5sum package-lock.json | cut -d' ' -f1)" > .install-stamp
-  else
-    ok "Deps unchanged"
-  fi
+  info "Installing deps..."
+  npm ci
+  echo "$(md5sum package-lock.json | cut -d' ' -f1)" > .install-stamp
 
   info "Building..."
   npm run build
   touch .build-stamp
 
   if pm2 list | grep -q "$APP"; then
-    pm2 restart "$APP"
-  else
-    pm2 start npm --name "$APP" -- start
-    pm2 save
+    pm2 delete "$APP" 2>/dev/null || true
   fi
+  pm2 start npm --name "$APP" -- start
+  pm2 save
   run_hook restart
 
   sleep 2
