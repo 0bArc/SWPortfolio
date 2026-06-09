@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { verifyToken, COOKIE_NAME } from "@/lib/admin/auth";
+import { adminConfig } from "@api-config";
+import { verifyToken, COOKIE_NAME } from "@/features/admin/services/auth";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,7 +15,7 @@ export async function proxy(request: NextRequest) {
 
   if (isAdminRoute && !isAuthExempt) {
     const sessionCookie = request.cookies.get(COOKIE_NAME);
-    const secret = process.env.ADMIN_SESSION_SECRET;
+    const secret = adminConfig.sessionSecret;
     const valid =
       secret && sessionCookie
         ? await verifyToken(sessionCookie.value, secret)

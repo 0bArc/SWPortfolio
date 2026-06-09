@@ -1,5 +1,5 @@
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
 
 export const metadata = { title: `About – ${process.env.NEXT_PUBLIC_SITE_OWNER ?? "Portfolio"}` };
 

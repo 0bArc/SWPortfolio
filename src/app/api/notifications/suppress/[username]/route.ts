@@ -1,4 +1,4 @@
-import { handleDeleteSuppress } from "@/api/notifications";
+import { handleDeleteSuppress } from "@/features/notifications/api";
 
 interface Props {
   params: Promise<{ username: string }>;

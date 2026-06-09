@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { handleRemoveIcon, handleUploadIcon } from "@/api/accounts/icon";
+import { handleRemoveIcon, handleUploadIcon } from "@/features/accounts/api/icon";
 
 export async function POST(request: NextRequest) {
   return handleUploadIcon(request);

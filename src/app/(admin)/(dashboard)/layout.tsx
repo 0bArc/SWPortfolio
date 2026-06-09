@@ -1,7 +1,7 @@
 import { Suspense } from "react";
-import AdminSidebar from "@/components/admin/AdminSidebar";
-import AdminIdleGuard from "@/components/admin/AdminIdleGuard";
-import { getIdleConfig } from "@/lib/admin/session-idle";
+import AdminSidebar from "@/features/admin/components/AdminSidebar";
+import AdminIdleGuard from "@/features/admin/components/AdminIdleGuard";
+import { getIdleConfig } from "@/features/admin/services/session-idle";
 
 export default function DashboardLayout({
   children,
@@ -11,7 +11,7 @@ export default function DashboardLayout({
   const idleConfig = getIdleConfig();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-[#050505]">
       <Suspense fallback={<div className="hidden md:block fixed left-0 top-0 h-full w-60 bg-[#0a0a0a] border-r border-white/5" />}>
         <AdminSidebar />
       </Suspense>

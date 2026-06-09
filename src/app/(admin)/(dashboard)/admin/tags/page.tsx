@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { listTagStyles } from "@/lib/tags/styles";
-import TagStyleEditor from "@/components/admin/TagStyleEditor";
+import TagStyleEditor from "@/features/admin/components/TagStyleEditor";
 
 export const metadata: Metadata = { title: "Tags – Admin" };
 

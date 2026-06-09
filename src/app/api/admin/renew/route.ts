@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, signToken, COOKIE_NAME, COOKIE_MAX_AGE } from "@/lib/admin/auth";
+import { adminConfig } from "@api-config";
+import { requireAdmin, signToken, COOKIE_NAME, COOKIE_MAX_AGE } from "@/features/admin/services/auth";
 
 export async function POST() {
   const denied = await requireAdmin();
   if (denied) return denied;
 
-  const secret = process.env.ADMIN_SESSION_SECRET;
+  const secret = adminConfig.sessionSecret;
   if (!secret) {
     return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
   }

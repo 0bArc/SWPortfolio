@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileText, Eye, Plus, ArrowRight } from "lucide-react";
-import { listPosts, type PostMeta } from "@/lib/blog/posts";
+import { FileText, Eye, Plus, ArrowRight, Users } from "lucide-react";
+import UnverifiedUsersPanel from "@/features/admin/components/UnverifiedUsersPanel";
+import { listPosts, type PostMeta } from "@/features/blog/services/posts";
 
 export const metadata: Metadata = { title: "Dashboard – Admin" };
 
@@ -72,8 +73,17 @@ export default async function AdminDashboard() {
           >
             Settings
           </Link>
+          <Link
+            href="/admin/users"
+            className="flex items-center gap-2 px-4 py-2.5 glass text-gray-300 text-sm font-medium rounded-xl card-hover"
+          >
+            <Users className="w-4 h-4" />
+            Users
+          </Link>
         </div>
       </div>
+
+      <UnverifiedUsersPanel />
 
       {recent.length > 0 && (
         <div>

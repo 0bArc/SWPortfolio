@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { handleSignup } from "@/api/accounts/signup";
+import { handleSignup } from "@/features/accounts/api/signup";
 
 export async function POST(request: NextRequest) {
   return handleSignup(request);

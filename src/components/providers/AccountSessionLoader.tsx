@@ -1,4 +1,4 @@
-import { getAccountSession } from "@/lib/accounts/auth";
+import { getAccountSession } from "@/features/accounts/services/auth/session";
 import type { SessionAccount } from "@/providers/AccountSessionProvider";
 import AppProviders from "./AppProviders";
 
@@ -10,6 +10,9 @@ function toSessionAccount(
     username: row.username,
     displayName: row.displayName,
     icon: row.icon,
+    emailVerified: row.emailVerified,
+    email: row.email,
+    ban: row.ban ?? null,
   };
 }
 
@@ -18,6 +21,11 @@ export default async function AccountSessionLoader({
 }: {
   children: React.ReactNode;
 }) {
-  const initialAccount = toSessionAccount(await getAccountSession());
+  let initialAccount: SessionAccount | null = null;
+  try {
+    initialAccount = toSessionAccount(await getAccountSession());
+  } catch {
+    // DB down or unreachable — render site without session instead of crashing
+  }
   return <AppProviders initialAccount={initialAccount}>{children}</AppProviders>;
 }

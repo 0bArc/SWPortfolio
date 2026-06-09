@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { notFound } from "next/navigation";
-import { getPost } from "@/lib/blog/posts";
-import PostEditor from "@/components/admin/PostEditor";
+import { getPost } from "@/features/blog/services/posts";
+import PostEditor from "@/features/admin/components/PostEditor";
 
 interface Props {
   params: Promise<{ slug: string }>;

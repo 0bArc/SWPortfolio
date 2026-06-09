@@ -3,7 +3,7 @@ import {
   handleDeleteAccount,
   handleGetSettings,
   handlePatchSettings,
-} from "@/api/accounts/settings";
+} from "@/features/accounts/api/settings";
 
 export async function GET() {
   return handleGetSettings();

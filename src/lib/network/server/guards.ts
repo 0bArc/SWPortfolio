@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
-import { getAdminSession } from "@/lib/admin/auth";
-import { requireAccount } from "@/lib/accounts/auth";
-import { canModerateComments, resolvePermissions } from "@/lib/accounts/permissions";
+import { getAdminSession } from "@/features/admin/services/auth";
+import { requireActiveAccount } from "@/features/accounts/services/auth/session";
+import { canModerateComments, resolvePermissions } from "@/features/accounts/services/permissions/resolve";
 import { assertSameOrigin, rateLimit, rateLimitAccount } from "@/lib/network/server/security";
 
 export type ModeratorAuth =
@@ -12,7 +12,7 @@ export type ModeratorAuth =
 export async function requireModerator(request?: NextRequest): Promise<ModeratorAuth | Response> {
   if (await getAdminSession()) return { kind: "admin" };
 
-  const auth = await requireAccount();
+  const auth = await requireActiveAccount();
   if (auth instanceof Response) return auth;
 
   const perms = await resolvePermissions(auth.accountId, auth.account.username);

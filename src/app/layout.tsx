@@ -5,8 +5,8 @@ import "./globals.css";
 import { CookieConsentProvider } from "@/providers/CookieConsentProvider";
 import AppProviders from "@/components/providers/AppProviders";
 import AccountSessionLoader from "@/components/providers/AccountSessionLoader";
-import Banner from "@/components/site/layout/Banner";
-import { SiteLinks } from "@/components/site-links";
+import Banner from "@/components/layout/Banner";
+import { SiteLinks } from "@/features/home/site-links";
 import type { CSSProperties } from "react";
 
 const inter = Inter({

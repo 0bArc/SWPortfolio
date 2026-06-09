@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { adminListUsers } from "@/lib/accounts/manager";
+import { requireAdmin } from "@/features/admin/services/auth";
+import { adminListUsers } from "@/features/accounts/services/admin/manager";
 
 export async function GET(request: NextRequest) {
   const denied = await requireAdmin();

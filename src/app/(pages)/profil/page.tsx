@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import { getUserProfile, getUserContributions, type WeekActivity } from "@/lib/github";
 import { translations, get } from "@/lib/i18n";
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
-import ContributionGrid from "@/components/site/project/ContributionGrid";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
+import ContributionGrid from "@/features/projects/components/ContributionGrid";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

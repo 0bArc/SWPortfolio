@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@api-config": ["./api-config.ts"],
+      "@permissions-config": ["./permissions.config.ts"]
     }
   },
   "include": [

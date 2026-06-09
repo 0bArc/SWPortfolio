@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 import { getBranches, getBranchCommits, getRepoData, type Commit } from "@/lib/github";
 import { translations, get } from "@/lib/i18n";
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
-import CommitList from "@/components/site/project/CommitList";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
+import CommitList from "@/features/projects/components/CommitList";
 import type { Metadata } from "next";
 
 interface Props {

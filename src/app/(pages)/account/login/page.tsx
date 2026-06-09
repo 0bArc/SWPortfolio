@@ -1,6 +1,6 @@
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
-import AccountAuthForm from "@/components/site/account/AccountAuthForm";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
+import AccountAuthForm from "@/features/accounts/components/AccountAuthForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

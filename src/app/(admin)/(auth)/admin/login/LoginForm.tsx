@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Lock, Shield, User } from "lucide-react";
+import { AlertCircle, Lock, User } from "lucide-react";
+
+type BridgeInfo = { canBridge: boolean; username?: string; displayName?: string };
 
 export default function LoginForm() {
   const router = useRouter();
@@ -10,6 +12,44 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [bridge, setBridge] = useState<BridgeInfo | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/admin/login", { credentials: "same-origin" })
+      .then((r) => r.json() as Promise<BridgeInfo>)
+      .then((data) => {
+        if (data.canBridge && data.username) {
+          setBridge(data);
+          setUsername(data.username);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function continueAsSignedIn() {
+    if (!bridge?.username) return;
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ username: bridge.username, useSiteSession: true }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (res.ok) {
+        router.push("/admin");
+        router.refresh();
+      } else {
+        setError(data.error ?? "Could not open admin panel");
+      }
+    } catch {
+      setError("Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -38,15 +78,21 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="glass rounded-2xl border border-white/[0.1] overflow-hidden shadow-2xl shadow-black/40">
-      <div className="px-7 pt-7 pb-5 border-b border-white/[0.06] bg-white/[0.01]">
-        <div className="flex items-center gap-2 text-[11px] font-medium text-gray-500">
-          <Shield className="h-3.5 w-3.5 text-gray-600" />
-          HMAC-signed session · 7-day max
-        </div>
-      </div>
+    <form onSubmit={handleSubmit} className="glass rounded-2xl border border-white/[0.1] p-7 space-y-5">
+      <p className="text-[11px] text-gray-500 leading-relaxed">
+        Site account with Founder, Admin, or Dev role — or env admin credentials.
+      </p>
 
-      <div className="p-7 space-y-5">
+      {bridge?.canBridge && (
+        <button
+          type="button"
+          onClick={() => void continueAsSignedIn()}
+          disabled={loading}
+          className="w-full h-11 rounded-xl bg-white text-black text-sm font-semibold hover:bg-gray-100 disabled:opacity-50 transition-colors"
+        >
+          {loading ? "Opening…" : `Continue as @${bridge.username}`}
+        </button>
+      )}
         <div>
           <label htmlFor="admin-username" className="admin-label">
             Username
@@ -94,14 +140,17 @@ export default function LoginForm() {
           </div>
         )}
 
-        <button
-          type="submit"
-          className="admin-btn admin-btn--primary admin-btn--lg w-full h-11 mt-1"
-          disabled={loading || !username || !password}
-        >
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
-      </div>
+      {bridge?.canBridge && (
+        <p className="text-center text-[10px] text-gray-600 uppercase tracking-widest">or sign in with password</p>
+      )}
+
+      <button
+        type="submit"
+        className="w-full h-11 rounded-xl border border-white/15 text-sm font-semibold text-gray-200 hover:bg-white/[0.05] disabled:opacity-50 transition-colors"
+        disabled={loading || !username || !password}
+      >
+        {loading ? "Signing in…" : "Sign in with password"}
+      </button>
     </form>
   );
 }

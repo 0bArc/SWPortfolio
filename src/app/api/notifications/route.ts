@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { handleGetNotifications, handlePatchNotifications } from "@/api/notifications";
+import { handleGetNotifications, handlePatchNotifications } from "@/features/notifications/api";
 
 export async function GET() {
   return handleGetNotifications();

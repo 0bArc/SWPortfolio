@@ -39,13 +39,13 @@ parse_db_url() {
 apply_migrations() {
   info "Applying additive DB migrations (data preserved)..."
   if command -v psql &>/dev/null && [[ -n "${DATABASE_URL:-}" ]]; then
-    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f src/lib/db/migrate.sql
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f src/database/sql/migrate.sql
   elif command -v docker &>/dev/null && docker ps --format '{{.Names}}' | grep -qx blog-db; then
     parse_db_url
-    docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/lib/db/migrate.sql
+    docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/database/sql/migrate.sql
   elif command -v psql &>/dev/null; then
     parse_db_url
-    sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f src/lib/db/migrate.sql
+    sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f src/database/sql/migrate.sql
   else
     warn "No psql/docker — skipping migrations (app will migrate on first request)"
     return
@@ -56,13 +56,13 @@ apply_migrations() {
 apply_seed() {
   info "Applying dev seed (skipped rows that already exist)..."
   if command -v psql &>/dev/null && [[ -n "${DATABASE_URL:-}" ]]; then
-    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f src/lib/db/seed.sql
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f src/database/sql/seed.sql
   elif command -v docker &>/dev/null && docker ps --format '{{.Names}}' | grep -qx blog-db; then
     parse_db_url
-    docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/lib/db/seed.sql
+    docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/database/sql/seed.sql
   else
     parse_db_url
-    sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f src/lib/db/seed.sql
+    sudo -u postgres psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f src/database/sql/seed.sql
   fi
   ok "Seed applied"
 }
@@ -118,7 +118,7 @@ ensure_docker_db() {
   ok "Postgres ready"
   docker exec blog-db psql -U "$DB_USER" -d postgres \
     -c "ALTER USER \"${DB_USER}\" WITH PASSWORD '${DB_PASS}';" >/dev/null 2>&1 || true
-  docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/lib/db/migrate.sql
+  docker exec -i blog-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < src/database/sql/migrate.sql
 }
 
 ensure_uploads() {

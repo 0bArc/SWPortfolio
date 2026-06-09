@@ -87,7 +87,7 @@ docker exec blog-db pg_isready -U !DB_USER! -q >nul 2>&1
 if errorlevel 1 goto :db_wait_pg
 echo %G%[OK]%N%  Postgres ready
 docker exec blog-db psql -U !DB_USER! -d postgres -c "ALTER USER \"!DB_USER!\" WITH PASSWORD '!DB_PASS!';" >nul 2>&1
-docker exec -i blog-db psql -U !DB_USER! -d !DB_NAME! < src\lib\db\schema.sql >nul
+docker exec -i blog-db psql -U !DB_USER! -d !DB_NAME! < src\database\sql\schema.sql >nul
 echo %G%[OK]%N%  Schema applied
 goto :eof
 

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import UserManagement from "@/components/admin/UserManagement";
+import IconReviewPanel from "@/features/admin/components/IconReviewPanel";
+import UnverifiedUsersPanel from "@/features/admin/components/UnverifiedUsersPanel";
+import UserManagement from "@/features/admin/components/UserManagement";
 
 export const metadata: Metadata = { title: "Users – Admin" };
 
@@ -11,6 +13,8 @@ export default function AdminUsersPage() {
         <h1 className="text-2xl font-bold text-white">Users</h1>
         <p className="text-sm text-gray-600 mt-1">Manage accounts, badges, and privacy settings.</p>
       </div>
+      <UnverifiedUsersPanel />
+      <IconReviewPanel />
       <UserManagement />
     </div>
   );

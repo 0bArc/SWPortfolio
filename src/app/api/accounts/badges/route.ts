@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { handleGetBadgeGrants, handlePostBadgeGrant } from "@/api/accounts/badges";
+import { handleGetBadgeGrants, handlePostBadgeGrant } from "@/features/accounts/api/badges";
 
 export async function GET() {
   return handleGetBadgeGrants();

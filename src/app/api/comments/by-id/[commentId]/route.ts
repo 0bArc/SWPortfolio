@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { handleDeleteComment } from "@/api/comments/delete";
+import { handleDeleteComment } from "@/features/blog/api/delete-comment";
 
 interface Props {
   params: Promise<{ commentId: string }>;

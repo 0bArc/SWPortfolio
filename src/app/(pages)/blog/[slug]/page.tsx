@@ -2,14 +2,14 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
-import TagBadge from "@/components/site/blog/TagBadge";
-import PostAuthor from "@/components/site/blog/PostAuthor";
-import { getPublishedPost } from "@/lib/blog/posts";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
+import TagBadge from "@/features/blog/components/TagBadge";
+import PostAuthor from "@/features/blog/components/PostAuthor";
+import { getPublishedPost } from "@/features/blog/services/posts";
 import { renderBlogMarkdown } from "@/lib/markdown/render";
-import BlogProse from "@/components/site/blog/BlogProse";
-import PostComments from "@/components/site/blog/PostComments";
+import BlogProse from "@/features/blog/components/BlogProse";
+import PostComments from "@/features/blog/components/PostComments";
 
 async function PostCommentsSection({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

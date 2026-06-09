@@ -1,11 +1,12 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { deeplConfig } from "@api-config";
 
 interface DeepLResponse {
   translations: { text: string }[];
 }
 
 async function callDeepL(texts: string[]): Promise<string[]> {
-  const apiKey = process.env.DEEPL_API_KEY;
+  const apiKey = deeplConfig.apiKey;
   if (!apiKey) return texts;
 
   const res = await fetch("https://api-free.deepl.com/v2/translate", {

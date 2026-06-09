@@ -1,11 +1,11 @@
 import type { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import type { AccountSettings } from "@/db/schema";
+import { requireAdmin } from "@/features/admin/services/auth";
+import type { AccountSettings } from "@/database/schema";
 import {
   adminDeleteUser,
   adminGetUser,
   adminUpdateUser,
-} from "@/lib/accounts/manager";
+} from "@/features/accounts/services/admin/manager";
 
 type RouteCtx = { params: Promise<{ username: string }> };
 

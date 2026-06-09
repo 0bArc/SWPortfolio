@@ -39,3 +39,15 @@ export type NotificationItem = {
 
 export type SyncPollHandle = { stop: () => void };
 export type SyncStreamHandle = { stop: () => void };
+
+export type StreamChannel =
+  | "notifications"
+  | "session"
+  | "profile"
+  | "comments"
+  | "admin-icons";
+
+export type StreamRefreshData = Record<string, unknown> & {
+  channel?: StreamChannel;
+  postSlug?: string;
+};

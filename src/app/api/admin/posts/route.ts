@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
-import { requireAdmin, isValidSlug } from "@/lib/admin/auth";
-import { listPosts, createPost } from "@/lib/blog/posts";
+import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
+import { listPosts, createPost } from "@/features/blog/services/posts";
 import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 
 function parseTags(raw: unknown): string[] {

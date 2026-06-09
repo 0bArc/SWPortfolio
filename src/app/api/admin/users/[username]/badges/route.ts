@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { adminGrantBadge, adminRevokeBadge } from "@/lib/accounts/manager";
+import { requireAdmin } from "@/features/admin/services/auth";
+import { adminGrantBadge, adminRevokeBadge } from "@/features/accounts/services/admin/manager";
 
 type RouteCtx = { params: Promise<{ username: string }> };
 

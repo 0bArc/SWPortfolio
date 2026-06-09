@@ -1,10 +1,10 @@
-import { requireAccount } from "@/lib/accounts/auth";
+import { requireActiveAccount } from "@/features/accounts/services/auth/session";
 import { subscribeAccountEvents } from "@/lib/network/server/events";
 import { rateLimitAccount } from "@/lib/network/server/security";
 
 /** Live SSE — no route segment config needed with cacheComponents. */
 export async function GET(): Promise<Response> {
-  const auth = await requireAccount();
+  const auth = await requireActiveAccount();
   if (auth instanceof Response) return auth;
 
   const limited = rateLimitAccount(auth.accountId, "notif-stream", 20, 60_000);
@@ -29,7 +29,12 @@ export async function GET(): Promise<Response> {
       send("event: connected\ndata: {}\n\n");
 
       unsubscribe = subscribeAccountEvents(auth.accountId, (event) => {
-        send(`event: ${event.type}\ndata: ${JSON.stringify(event.data ?? {})}\n\n`);
+        send(
+          `event: ${event.type}\ndata: ${JSON.stringify({
+            channel: event.channel,
+            ...event.data,
+          })}\n\n`
+        );
       });
 
       heartbeat = setInterval(() => send(": ping\n\n"), 25_000);

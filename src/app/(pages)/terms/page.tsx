@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
-import LegalDocument from "@/components/site/legal/LegalDocument";
-import { LegalPageFallback } from "@/components/site/legal/LegalPageFallback";
-import { getTerms } from "@/lib/legal/content";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
+import LegalDocument from "@/features/legal/components/LegalDocument";
+import { LegalPageFallback } from "@/features/legal/components/LegalPageFallback";
+import { getTerms } from "@/features/legal/services/content";
 import { CONTACT_EMAIL, SITE_OWNER } from "@/lib/env";
 
 export const metadata: Metadata = {

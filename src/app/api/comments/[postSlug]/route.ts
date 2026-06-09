@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { handleGetComments, handlePostComment } from "@/api/comments";
+import { handleGetComments, handlePostComment } from "@/features/blog/api/comments";
 
 type Props = { params: Promise<{ postSlug: string }> };
 

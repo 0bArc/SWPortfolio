@@ -9,10 +9,20 @@ import {
   useState,
 } from "react";
 
+export type SessionBan = {
+  reason: string | null;
+  bannedAt: string;
+  expiresAt: string | null;
+  bannedBy: { username: string; displayName: string } | null;
+};
+
 export type SessionAccount = {
   username: string;
   displayName: string;
   icon: string | null;
+  emailVerified?: boolean;
+  email?: string | null;
+  ban?: SessionBan | null;
 };
 
 type AccountSessionCtx = {

@@ -1,14 +1,14 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
-import AccountProfilePanel from "@/components/site/account/AccountProfilePanel";
-import PublicProfileView from "@/components/site/account/PublicProfileView";
-import StaffPanel from "@/components/site/account/StaffPanel";
-import { getProfileView } from "@/lib/db/accounts";
-import { getAccountSession, getAccountSessionId } from "@/lib/accounts/auth";
-import { hasPermission, resolvePermissions } from "@/lib/accounts/permissions";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
+import AccountProfilePanel from "@/features/accounts/components/AccountProfilePanel";
+import PublicProfileView from "@/features/accounts/components/PublicProfileView";
+import StaffPanel from "@/features/accounts/components/StaffPanel";
+import { getProfileView } from "@/database/accounts";
+import { getAccountSession, getAccountSessionId } from "@/features/accounts/services/auth/session";
+import { canUseStaffPanel, resolvePermissions } from "@/features/accounts/services/permissions/resolve";
 import type { Metadata } from "next";
 
 interface Props {
@@ -62,11 +62,15 @@ async function ProfileContent({ params }: { params: Promise<{ username: string }
   }
 
   const { account, badges, featuredBadge, history, isOwner, settings } = profile;
-  const canAwardBadges =
+  const viewerPerms =
+    sessionId && session
+      ? await resolvePermissions(sessionId, session.username)
+      : new Set<import("@/features/accounts/services/permissions/resolve").Permission>();
+  const canStaffPanel =
     !isOwner &&
     !!sessionId &&
     !!session &&
-    hasPermission(await resolvePermissions(sessionId, session.username), "badges:award");
+    canUseStaffPanel(viewerPerms);
   const joined = new Date(account.createdAt).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
@@ -75,9 +79,9 @@ async function ProfileContent({ params }: { params: Promise<{ username: string }
 
   return (
     <main
-      className={`mx-auto px-6 md:px-10 pt-24 pb-10 ${canAwardBadges ? "max-w-5xl" : "max-w-3xl"}`}
+      className={`mx-auto px-6 md:px-10 pt-24 pb-10 ${canStaffPanel ? "max-w-5xl" : "max-w-3xl"}`}
     >
-      <div className={`flex flex-col gap-5 ${canAwardBadges ? "lg:flex-row lg:items-start" : ""}`}>
+      <div className={`flex flex-col gap-5 ${canStaffPanel ? "lg:flex-row lg:items-start" : ""}`}>
         <div className="flex-1 min-w-0 glass rounded-2xl border border-white/[0.1] p-6 sm:p-8">
           {isOwner ? (
             <AccountProfilePanel
@@ -101,8 +105,8 @@ async function ProfileContent({ params }: { params: Promise<{ username: string }
           )}
         </div>
 
-        {canAwardBadges && (
-          <div className="w-full lg:w-56 shrink-0">
+        {canStaffPanel && (
+          <div className="w-full lg:w-80 shrink-0">
             <StaffPanel targetUsername={account.username} />
           </div>
         )}

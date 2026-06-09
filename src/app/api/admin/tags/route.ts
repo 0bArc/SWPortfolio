@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin, isValidSlug } from "@/lib/admin/auth";
+import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
 import { listTagStyles, parseTagStyleConfig, upsertTagStyle } from "@/lib/tags/styles";
 
 export async function GET() {

@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { getPool } from "@/lib/db";
+import { getPool } from "@/database";
 
 export type { TagKeyframe, TagStyleConfig, TagStyleRecord, TagTextEffect } from "@/lib/tags/types";
 import type { TagKeyframe, TagStyleConfig, TagStyleRecord, TagTextEffect } from "@/lib/tags/types";

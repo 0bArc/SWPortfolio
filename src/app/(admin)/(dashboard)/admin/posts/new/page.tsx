@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import PostEditor from "@/components/admin/PostEditor";
+import PostEditor from "@/features/admin/components/PostEditor";
 
 export const metadata: Metadata = { title: "New Post – Admin" };
 

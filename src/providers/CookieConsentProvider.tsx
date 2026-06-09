@@ -8,11 +8,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import { COOKIE_PREF_DEFAULTS, type CookiePreferences } from "@/db/schema";
+import { COOKIE_PREF_DEFAULTS, type CookiePreferences } from "@/database/schema";
 import {
   consentDecidedNow,
   isConsentExpired,
-} from "@/db/utils/consent-retention";
+} from "@/database/utils/consent-retention";
 
 const STORAGE_KEY = "cookie-consent";
 

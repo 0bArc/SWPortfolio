@@ -1,14 +1,13 @@
 import { cacheLife } from "next/cache";
+import { githubConfig } from "@api-config";
 
 const GH_API = "https://api.github.com";
-const USER = process.env.NEXT_PUBLIC_GITHUB_USER ?? "";
+const USER = githubConfig.user;
 
 const baseHeaders: HeadersInit = {
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": "2022-11-28",
-  ...(process.env.GITHUB_TOKEN
-    ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-    : {}),
+  ...(githubConfig.token ? { Authorization: `Bearer ${githubConfig.token}` } : {}),
 };
 
 async function ghFetch<T>(path: string): Promise<T> {

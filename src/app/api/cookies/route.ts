@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import {
   VISITOR_COOKIE,
   VISITOR_COOKIE_MAX_AGE,
-} from "@/db/schema";
+} from "@/database/schema";
 import {
   deleteVisitorConsent,
   getVisitorCookies,
@@ -12,8 +12,8 @@ import {
   prefsFromAction,
   purgeExpiredConsents,
   upsertVisitorCookies,
-} from "@/db/utils/cookies";
-import { isConsentExpired } from "@/db/utils/consent-retention";
+} from "@/database/utils/cookies";
+import { isConsentExpired } from "@/database/utils/consent-retention";
 
 function visitorCookieOpts(maxAge = VISITOR_COOKIE_MAX_AGE) {
   return {

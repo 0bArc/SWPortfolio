@@ -1,6 +1,6 @@
-import Navbar from "@/components/site/layout/NavbarWrapper";
-import Footer from "@/components/site/layout/FooterWrapper";
-import ProjectPageClient from "@/components/site/project/ProjectPageClient";
+import Navbar from "@/components/layout/NavbarWrapper";
+import Footer from "@/components/layout/FooterWrapper";
+import ProjectPageClient from "@/features/projects/components/ProjectPageClient";
 import type { Metadata } from "next";
 
 interface Props {
