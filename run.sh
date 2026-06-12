@@ -268,11 +268,13 @@ ensure_deps() {
 
 ensure_build() {
   local stamp=".build-stamp"
-  if [[ -d .next && -f "$stamp" ]] && [[ -z "$(find src public next.config.ts package.json -newer "$stamp" 2>/dev/null | head -1)" ]]; then
+  local force="${1:-}"
+  if [[ "$force" != "1" && -d .next && -f "$stamp" ]] && [[ -z "$(find src public next.config.ts package.json -newer "$stamp" 2>/dev/null | head -1)" ]]; then
     ok "Build up to date"
     return
   fi
-  info "Building..."
+  info "Building (clean .next)..."
+  rm -rf .next
   npm run build
   touch "$stamp"
   ok "Build done"
@@ -330,7 +332,7 @@ cmd_update() {
   ensure_deps
   apply_migrations
   ensure_uploads
-  ensure_build
+  ensure_build 1
 
   if pm2 list 2>/dev/null | grep -q "$APP"; then
     pm_restart
@@ -432,6 +434,14 @@ server {
     location ^~ /api/debug/ { return 404; }
     location ~* \.(sql|bak|tar\.gz|zip|php)$ { return 404; }
 
+    # Serve hashed build assets from disk (avoids Next 500 on stale chunk manifests)
+    location /_next/static/ {
+        alias ${ROOT}/.next/static/;
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
     location / {
         proxy_pass         http://127.0.0.1:${APP_PORT};
         proxy_http_version 1.1;
@@ -466,6 +476,18 @@ cmd_doctor() {
     warn "App :${APP_PORT} → HTTP ${code} (502 cause if nginx ok)"
     info "Try: ./run.sh logs"
   fi
+  local css_href css_code css_type
+  css_href=$(curl -s "http://127.0.0.1:${APP_PORT}/" 2>/dev/null | grep -oE '/_next/static/chunks/[^"]+\.css' | head -1 || true)
+  if [[ -n "$css_href" ]]; then
+    css_code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${APP_PORT}${css_href}" 2>/dev/null || echo "000")
+    css_type=$(curl -sI "http://127.0.0.1:${APP_PORT}${css_href}" 2>/dev/null | grep -i '^content-type:' | head -1 | tr -d '\r' || true)
+    if [[ "$css_code" == "200" && "$css_type" == *"text/css"* ]]; then
+      ok "Static CSS ${css_href} → 200 text/css"
+    else
+      warn "Static CSS broken: ${css_href} → HTTP ${css_code} (${css_type:-no Content-Type})"
+      warn "Run: ./run.sh update  (clean rebuild). If still broken, purge Cloudflare cache for /_next/static/*"
+    fi
+  fi
   local api_local api_body
   api_body=$(curl -s "http://127.0.0.1:${APP_PORT}/api/v1/me" -H "Authorization: Bearer kn_invalid" 2>/dev/null || true)
   if [[ "$api_body" == *"Invalid or revoked"* || "$api_body" == *"Missing API key"* ]]; then
@@ -495,6 +517,11 @@ cmd_doctor() {
     upstream=$(grep -E 'proxy_pass' "/etc/nginx/sites-enabled/${SITE_DOMAIN}" 2>/dev/null | head -1 || true)
     if [[ -n "$upstream" && "$upstream" != *":${APP_PORT}"* ]]; then
       warn "Nginx upstream may be wrong: ${upstream} (expected :${APP_PORT})"
+    fi
+    if grep -q '_next/static' "/etc/nginx/sites-enabled/${SITE_DOMAIN}" 2>/dev/null; then
+      ok "Nginx serves /_next/static from disk"
+    else
+      warn "Nginx missing /_next/static alias — run './run.sh nginx'"
     fi
   else
     warn "No nginx config for ${SITE_DOMAIN} — run './run.sh nginx'"
