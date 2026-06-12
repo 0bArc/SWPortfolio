@@ -18,8 +18,35 @@ export type MediaModerationAction = "approve" | "reject" | "delete";
 
 export type IconReviewAction = "approve" | "reject";
 
+export type ProfileField = "displayName" | "bio" | "settings";
+
+export type TagChangeAction = "created" | "updated" | "deleted";
+
 /** Domain events — single contract for all site mutations. */
 export type SiteEvent =
+  | {
+      type: "account.created";
+      actorAccountId: number;
+      username: string;
+      displayName: string;
+      emailVerificationRequired: boolean;
+    }
+  | {
+      type: "account.deleted";
+      actorAccountId: number;
+      username: string;
+      selfDelete: boolean;
+    }
+  | {
+      type: "account.email_verification_sent";
+      targetAccountId: number;
+    }
+  | {
+      type: "tag.changed";
+      actorAccountId: number | null;
+      slug: string;
+      action: TagChangeAction;
+    }
   | {
       type: "comment.created";
       actorAccountId: number;
@@ -130,6 +157,8 @@ export type SiteEvent =
   | {
       type: "profile.updated";
       actorAccountId: number;
+      username: string;
+      changed: ProfileField[];
     }
   | {
       type: "session.updated";

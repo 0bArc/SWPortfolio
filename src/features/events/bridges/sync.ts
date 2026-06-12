@@ -53,6 +53,18 @@ export function applySyncBridge(event: SiteEvent): void {
       publishAccountEvent(event.actorAccountId, { type: "refresh", channel: "profile" });
       break;
 
+    case "media.uploaded":
+      if (event.pendingReview) {
+        if (event.kind === "avatar") {
+          publishAdminEvent({ type: "refresh", channel: "admin-icons" });
+        }
+        publishAdminEvent({ type: "refresh", channel: "admin-media" });
+      } else if (event.kind === "avatar") {
+        publishAccountEvent(event.actorAccountId, { type: "refresh", channel: "session" });
+        publishAccountEvent(event.actorAccountId, { type: "refresh", channel: "profile" });
+      }
+      break;
+
     case "icon.removed":
       publishAccountEvent(event.actorAccountId, { type: "refresh", channel: "profile" });
       publishAccountEvent(event.actorAccountId, { type: "refresh", channel: "session" });
@@ -74,6 +86,14 @@ export function applySyncBridge(event: SiteEvent): void {
         type: "refresh",
         channel: "posts",
         data: { slug: event.slug, status: event.status, action: event.action },
+      });
+      break;
+
+    case "tag.changed":
+      publishAdminEvent({
+        type: "refresh",
+        channel: "posts",
+        data: { tag: event.slug, action: event.action },
       });
       break;
 

@@ -23,7 +23,7 @@ import {
   type AdminActor,
 } from "@/features/accounts/services/permissions/actor";
 import { markEmailVerified } from "@/database/email-verification";
-import { dispatchSiteEvent } from "@/features/events";
+import { dispatchSiteEvent, type ProfileField } from "@/features/events";
 import { banAccount, unbanAccount } from "@/database/ban";
 import {
   awardBadge,
@@ -224,6 +224,18 @@ export async function adminUpdateUser(
     await updateAccountSettings(row.id, patch.settings);
   }
 
+  const changed: ProfileField[] = [];
+  if (patch.displayName !== undefined) changed.push("displayName");
+  if (patch.settings) changed.push("settings");
+  if (changed.length > 0) {
+    await dispatchSiteEvent({
+      type: "profile.updated",
+      actorAccountId: actor.kind === "account" ? actor.accountId : row.id,
+      username: normalized,
+      changed,
+    });
+  }
+
   const updated = await getAccountListItem(normalized);
   if (!updated) return { ok: false, error: "User not found", status: 404 };
   return { ok: true, data: updated };
@@ -240,6 +252,13 @@ export async function adminDeleteUser(username: string): Promise<AdminActionResu
   }
   const row = await getAccountByUsername(normalized);
   if (!row) return { ok: false, error: "User not found", status: 404 };
+
+  await dispatchSiteEvent({
+    type: "account.deleted",
+    actorAccountId: actor.kind === "account" ? actor.accountId : row.id,
+    username: normalized,
+    selfDelete: false,
+  });
   await deleteAccount(row.id);
   return { ok: true, data: undefined };
 }

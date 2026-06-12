@@ -9,6 +9,9 @@ import type { SiteEvent } from "@/features/events/types";
 /**
  * Central event dispatcher — all mutation handlers publish here.
  * Bridges fan out to SSE sync, notifications, audit logs, and activity.
+ *
+ * Do not call createNotification, appendActivity, or publish*Event from features.
+ * logSecurityEvent is separate (auth/security table, not domain audit).
  */
 export async function dispatchSiteEvent(event: SiteEvent): Promise<void> {
   applySyncBridge(event);

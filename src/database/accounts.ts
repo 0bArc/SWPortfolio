@@ -536,6 +536,7 @@ export async function usernameExists(username: string): Promise<boolean> {
   return rows[0]?.exists === true;
 }
 
+/** @internal Event activity bridge only — do not call from feature code. */
 export async function appendActivity(accountId: number, entry: AccountActivityEntry): Promise<void> {
   const pool = await getPoolReady();
   await pool.query(

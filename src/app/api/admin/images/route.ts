@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { requireAdminCms } from "@/features/admin/services/auth";
 import { getAccountSessionId } from "@/features/accounts/services/auth/session";
+import { dispatchSiteEvent } from "@/features/events";
 import { saveTrackedImage } from "@/features/media/services/assets";
 import { jsonError } from "@/lib/network/http";
 
@@ -27,6 +28,16 @@ export async function POST(request: NextRequest) {
       uploadedByAccountId: accountId,
       approvedByAccountId: accountId,
     });
+    if (accountId) {
+      await dispatchSiteEvent({
+        type: "media.uploaded",
+        actorAccountId: accountId,
+        mediaId: id,
+        kind: "blog",
+        status: "approved",
+        pendingReview: false,
+      });
+    }
     return Response.json({ id, url }, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Upload failed";

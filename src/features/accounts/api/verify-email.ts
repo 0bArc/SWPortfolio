@@ -22,6 +22,13 @@ export async function handleVerifyEmail(request: NextRequest): Promise<Response>
   }
 
   await dispatchSiteEvent({
+    type: "user.email_verified",
+    actorAccountId: null,
+    targetAccountId: result.accountId,
+    username: result.username,
+    byStaff: false,
+  });
+  await dispatchSiteEvent({
     type: "session.updated",
     targetAccountId: result.accountId,
   });

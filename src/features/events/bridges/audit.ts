@@ -26,6 +26,66 @@ function buildAuditEntry(event: SiteEvent): {
   meta?: Record<string, unknown>;
 } | null {
   switch (event.type) {
+    case "account.created":
+      return {
+        eventType: event.type,
+        category: "account",
+        actorAccountId: event.actorAccountId,
+        targetAccountId: event.actorAccountId,
+        targetResourceType: "user",
+        targetResourceId: event.username,
+        summary: `Account created: @${event.username}`,
+        meta: { emailVerificationRequired: event.emailVerificationRequired },
+      };
+
+    case "account.deleted":
+      return {
+        eventType: event.type,
+        category: "account",
+        actorAccountId: event.actorAccountId,
+        targetResourceType: "user",
+        targetResourceId: event.username,
+        summary: event.selfDelete
+          ? `Account self-deleted: @${event.username}`
+          : `Account deleted by staff: @${event.username}`,
+        meta: { selfDelete: event.selfDelete },
+      };
+
+    case "profile.updated":
+      return {
+        eventType: event.type,
+        category: "account",
+        actorAccountId: event.actorAccountId,
+        targetAccountId: event.actorAccountId,
+        targetResourceType: "user",
+        targetResourceId: event.username,
+        summary: `Profile updated: @${event.username} (${event.changed.join(", ")})`,
+        meta: { changed: event.changed },
+      };
+
+    case "tag.changed":
+      return {
+        eventType: event.type,
+        category: "content",
+        actorAccountId: event.actorAccountId,
+        targetResourceType: "tag",
+        targetResourceId: event.slug,
+        summary: `Tag style ${event.action}: ${event.slug}`,
+        meta: { action: event.action },
+      };
+
+    case "media.uploaded":
+      return {
+        eventType: event.type,
+        category: "media",
+        actorAccountId: event.actorAccountId,
+        targetAccountId: event.actorAccountId,
+        targetResourceType: "media",
+        targetResourceId: event.mediaId,
+        summary: `Media uploaded: ${event.kind} ${event.mediaId.slice(0, 8)} (${event.status})`,
+        meta: { kind: event.kind, status: event.status, pendingReview: event.pendingReview },
+      };
+
     case "comment.moderated":
       return {
         eventType: event.type,
@@ -80,7 +140,17 @@ function buildAuditEntry(event: SiteEvent): {
       };
 
     case "user.email_verified":
-      if (!event.byStaff) return null;
+      if (!event.byStaff) {
+        return {
+          eventType: event.type,
+          category: "account",
+          actorAccountId: event.actorAccountId,
+          targetAccountId: event.targetAccountId,
+          targetResourceType: "user",
+          targetResourceId: event.username,
+          summary: `Email verified: @${event.username}`,
+        };
+      }
       return {
         eventType: event.type,
         category: "account",

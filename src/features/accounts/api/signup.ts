@@ -22,6 +22,7 @@ import { getClientIp, jsonError } from "@/lib/network/http";
 import { assertSameOrigin, rateLimit } from "@/lib/network/server/security";
 import { emailVerificationRequired, isMailSandbox, mailConfigured, siteUrlForRequest } from "@/lib/mail";
 import { deleteAccount } from "@/database/accounts";
+import { dispatchSiteEvent } from "@/features/events";
 import { logSecurityEvent } from "@/lib/security/audit";
 import { databaseUnavailableMessage, isDatabaseConnectionError } from "@/lib/database/errors";
 
@@ -124,6 +125,13 @@ export async function handleSignup(request: NextRequest): Promise<Response> {
   if (!full) return jsonError("Account creation failed", 500);
 
   await syncBadgesForAccount(full.id, full.username);
+  await dispatchSiteEvent({
+    type: "account.created",
+    actorAccountId: full.id,
+    username: full.username,
+    displayName: full.display_name,
+    emailVerificationRequired: needsEmail,
+  });
   await logSecurityEvent({ type: "signup", ip, accountId: full.id, meta: { username } });
 
   if (needsEmail) {

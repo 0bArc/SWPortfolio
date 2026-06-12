@@ -4,7 +4,9 @@ export type {
   CommentModerationAction,
   IconReviewAction,
   MediaModerationAction,
+  ProfileField,
   SiteEvent,
   SiteEventType,
+  TagChangeAction,
   UserModerationType,
 } from "@/features/events/types";

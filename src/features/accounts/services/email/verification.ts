@@ -4,7 +4,7 @@ import {
   getAccountEmail,
   normalizeEmail,
 } from "@/database/email-verification";
-import { appendActivity } from "@/database/accounts";
+import { dispatchSiteEvent } from "@/features/events";
 import { sendMail, mailConfigured } from "@/lib/mail";
 import { buildVerifyUrl, verificationEmailContent } from "./templates";
 
@@ -31,9 +31,9 @@ export async function sendVerificationEmail(
 
   if (!result.ok) return result;
 
-  await appendActivity(accountId, {
-    type: "email_verification_sent",
-    at: new Date().toISOString(),
+  await dispatchSiteEvent({
+    type: "account.email_verification_sent",
+    targetAccountId: accountId,
   });
 
   return { ok: true };
@@ -44,11 +44,6 @@ export async function verifyEmailByToken(
 ): Promise<{ accountId: number; username: string } | null> {
   const consumed = await consumeEmailVerificationToken(rawToken.trim());
   if (!consumed) return null;
-
-  await appendActivity(consumed.accountId, {
-    type: "email_verified",
-    at: new Date().toISOString(),
-  });
 
   return { accountId: consumed.accountId, username: consumed.username };
 }

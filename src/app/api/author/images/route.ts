@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { requireAuthorPost } from "@/features/blog/services/author-guard";
+import { dispatchSiteEvent } from "@/features/events";
 import { saveTrackedImage } from "@/features/media/services/assets";
 import { jsonError } from "@/lib/network/http";
 
@@ -25,6 +26,14 @@ export async function POST(request: NextRequest) {
       accountId: actor.accountId,
       uploadedByAccountId: actor.accountId,
       approvedByAccountId: actor.accountId,
+    });
+    await dispatchSiteEvent({
+      type: "media.uploaded",
+      actorAccountId: actor.accountId,
+      mediaId: id,
+      kind: "blog",
+      status: "approved",
+      pendingReview: false,
     });
     return Response.json({ id, url }, { status: 201 });
   } catch (err) {

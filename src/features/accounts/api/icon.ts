@@ -74,12 +74,6 @@ export async function handleUploadIcon(request: NextRequest): Promise<Response> 
     }
 
     await dispatchSiteEvent({
-      type: "icon.uploaded",
-      actorAccountId: auth.accountId,
-      pendingReview: !autoApprove,
-    });
-
-    await dispatchSiteEvent({
       type: "media.uploaded",
       actorAccountId: auth.accountId,
       mediaId: id,

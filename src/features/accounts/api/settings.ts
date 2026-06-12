@@ -17,6 +17,7 @@ import {
 } from "@/database/accounts";
 import { listCommentsForAccount } from "@/database/comments";
 import { assertSameOrigin, rateLimit } from "@/lib/network/server/security";
+import { dispatchSiteEvent, type ProfileField } from "@/features/events";
 import { jsonError } from "@/lib/network/http";
 
 export async function handleGetSettings(): Promise<Response> {
@@ -121,6 +122,19 @@ export async function handlePatchSettings(request: NextRequest): Promise<Respons
     await updateAccountBio(auth.accountId, bio);
   }
 
+  const changed: ProfileField[] = [];
+  if (displayName) changed.push("displayName");
+  if (bio !== undefined) changed.push("bio");
+  if (Object.keys(patch).length > 0) changed.push("settings");
+  if (changed.length > 0) {
+    await dispatchSiteEvent({
+      type: "profile.updated",
+      actorAccountId: auth.accountId,
+      username: auth.account.username,
+      changed,
+    });
+  }
+
   const row = await getAccountByUsername(auth.account.username);
   return Response.json({
     settings,
@@ -163,6 +177,12 @@ export async function handleDeleteAccount(request: NextRequest): Promise<Respons
   const raw = jar.get(ACCOUNT_SESSION_COOKIE)?.value;
   if (raw) await deleteSessionToken(raw);
 
+  await dispatchSiteEvent({
+    type: "account.deleted",
+    actorAccountId: auth.accountId,
+    username: auth.account.username,
+    selfDelete: true,
+  });
   await deleteAccount(auth.accountId);
 
   const res = NextResponse.json({ ok: true });

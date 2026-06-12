@@ -83,6 +83,7 @@ export async function isNotificationSuppressed(
   return rows[0]?.exists === true;
 }
 
+/** @internal Event notification bridge only — do not call from feature code. */
 export async function createNotification(input: {
   accountId: number;
   actorAccountId: number | null;
