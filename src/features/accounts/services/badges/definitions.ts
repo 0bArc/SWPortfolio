@@ -7,15 +7,29 @@ import {
   Globe,
   MessageCircle,
   MessagesSquare,
+  PenLine,
   Shield,
   ShieldCheck,
   User,
+  Terminal
 } from "lucide-react";
 import { badgeCreator } from "./create";
 import type { BadgeDef } from "./types";
 
 /** All site badges — edit here with badgeCreator.create(…) */
 export const BADGES: BadgeDef[] = [
+  badgeCreator
+    .create("root")
+    .name("Root")
+    .description("R̴̡̒o̶͈̐o̵͕̾̀t̶̖̎")
+    .icon(Terminal)
+    .color("red")
+    .tone("accent")
+    .order(5)
+    .role("founder", 5)
+    .permissions("posts:write")
+    .awardableBy("badges:grant:founder")
+    .build(),
   badgeCreator
     .create("founder")
     .name("Founder")
@@ -43,7 +57,8 @@ export const BADGES: BadgeDef[] = [
       "comments:moderate",
       "badges:award",
       "badges:grant:mod",
-      "badges:grant:dev"
+      "badges:grant:dev",
+      "badges:grant:author"
     )
     .awardableBy("badges:grant:admin")
     .build(),
@@ -71,6 +86,19 @@ export const BADGES: BadgeDef[] = [
     .role("mod", 3)
     .permissions("users:moderate", "comments:moderate", "badges:award")
     .awardableBy("badges:grant:mod")
+    .build(),
+
+  badgeCreator
+    .create("author")
+    .name("Author")
+    .description("Writes blog posts")
+    .icon(PenLine)
+    .color("violet")
+    .tone("accent")
+    .order(4)
+    .role("author", 4)
+    .permissions("posts:write")
+    .awardableBy("badges:grant:author")
     .build(),
 
   badgeCreator

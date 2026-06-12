@@ -1,33 +1,21 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { AlertCircle, Lock, User } from "lucide-react";
+import type { AdminBridgeInfo } from "@/features/admin/services/bridge";
 
-type BridgeInfo = { canBridge: boolean; username?: string; displayName?: string };
+interface Props {
+  bridge: AdminBridgeInfo;
+}
 
-export default function LoginForm() {
-  const router = useRouter();
-  const [username, setUsername] = useState("");
+export default function LoginForm({ bridge }: Props) {
+  const [username, setUsername] = useState(bridge.canBridge ? bridge.username : "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [bridge, setBridge] = useState<BridgeInfo | null>(null);
-
-  useEffect(() => {
-    void fetch("/api/admin/login", { credentials: "same-origin" })
-      .then((r) => r.json() as Promise<BridgeInfo>)
-      .then((data) => {
-        if (data.canBridge && data.username) {
-          setBridge(data);
-          setUsername(data.username);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   async function continueAsSignedIn() {
-    if (!bridge?.username) return;
+    if (!bridge.canBridge) return;
     setError("");
     setLoading(true);
     try {
@@ -39,8 +27,8 @@ export default function LoginForm() {
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok) {
-        router.push("/admin");
-        router.refresh();
+        window.location.assign("/admin");
+        return;
       } else {
         setError(data.error ?? "Could not open admin panel");
       }
@@ -64,8 +52,8 @@ export default function LoginForm() {
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok) {
-        router.push("/admin");
-        router.refresh();
+        window.location.assign("/admin");
+        return;
       } else {
         setError(data.error ?? `Login failed (${res.status})`);
         setPassword("");
@@ -83,7 +71,7 @@ export default function LoginForm() {
         Site account with Founder, Admin, or Dev role — or env admin credentials.
       </p>
 
-      {bridge?.canBridge && (
+      {bridge.canBridge && (
         <button
           type="button"
           onClick={() => void continueAsSignedIn()}
@@ -106,7 +94,7 @@ export default function LoginForm() {
               placeholder="admin"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              autoFocus
+              autoFocus={!bridge.canBridge}
               autoComplete="username"
             />
           </div>
@@ -140,7 +128,7 @@ export default function LoginForm() {
           </div>
         )}
 
-      {bridge?.canBridge && (
+      {bridge.canBridge && (
         <p className="text-center text-[10px] text-gray-600 uppercase tracking-widest">or sign in with password</p>
       )}
 

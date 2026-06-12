@@ -7,6 +7,12 @@ import {
   PENDING_ICONS_PAGE_SIZE,
   rejectAccountIcon,
 } from "@/database/accounts";
+import {
+  approveMediaId,
+  idsFromIconUrls,
+  purgeMediaIds,
+  rejectMediaId,
+} from "@/features/media/services/assets";
 import { publishAccountEvent, publishAdminEvent } from "@/lib/network/server/events";
 import { jsonError } from "@/lib/network/http";
 
@@ -44,12 +50,20 @@ export async function handleReviewIcon(
   const row = await getAccountByUsername(username.trim().toLowerCase());
   if (!row) return jsonError("User not found", 404);
 
-  const ok =
-    action === "approve"
-      ? await approveAccountIcon(row.id)
-      : await rejectAccountIcon(row.id);
+  const pendingIds = idsFromIconUrls(row.icon_pending);
+  const oldIconIds = idsFromIconUrls(row.icon);
 
-  if (!ok) return jsonError("No pending photo for this user", 400);
+  if (action === "approve") {
+    const ok = await approveAccountIcon(row.id);
+    if (!ok) return jsonError("No pending photo for this user", 400);
+    for (const id of pendingIds) await approveMediaId(id);
+    const stale = oldIconIds.filter((id) => !pendingIds.includes(id));
+    await purgeMediaIds(stale);
+  } else {
+    const ok = await rejectAccountIcon(row.id);
+    if (!ok) return jsonError("No pending photo for this user", 400);
+    for (const id of pendingIds) await rejectMediaId(id);
+  }
 
   publishAdminEvent({ type: "refresh", channel: "admin-icons" });
   publishAccountEvent(row.id, { type: "refresh", channel: "session" });

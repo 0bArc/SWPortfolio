@@ -7,7 +7,9 @@ export type SecurityEventType =
   | "signup"
   | "email_verify_failed"
   | "email_verify_success"
-  | "rate_limited";
+  | "rate_limited"
+  | "probe_blocked"
+  | "api_key_invalid";
 
 export async function logSecurityEvent(input: {
   type: SecurityEventType;

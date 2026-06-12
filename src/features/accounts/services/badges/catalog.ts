@@ -58,6 +58,14 @@ export function grantKeyFor(slug: string, at: Date = new Date()): string {
   return slug;
 }
 
+export function isHiddenBadgeSlug(slug: string): boolean {
+  return BADGE_BY_SLUG[slug]?.award.hidden === true;
+}
+
+export function visibleBadges(badges: AccountBadge[]): AccountBadge[] {
+  return badges.filter((b) => !isHiddenBadgeSlug(b.slug));
+}
+
 export function resolveFeaturedBadge(
   badges: AccountBadge[],
   slug: string | null | undefined
@@ -67,6 +75,22 @@ export function resolveFeaturedBadge(
     if (picked) return picked;
   }
   return badges[0] ?? null;
+}
+
+/** Profile/post display — honors featured slug, skips legacy hidden badges. */
+export function resolvePublicDisplayBadge(
+  badges: AccountBadge[],
+  featuredSlug: string | null | undefined
+): AccountBadge | null {
+  const visible = visibleBadges(badges);
+  if (!visible.length) return null;
+  if (featuredSlug) {
+    const picked = visible.find((b) => b.slug === featuredSlug);
+    if (picked) return picked;
+  }
+  return visible.sort((a, b) =>
+    badgeSortKey(a.slug, a.awardedAt).localeCompare(badgeSortKey(b.slug, b.awardedAt))
+  )[0];
 }
 
 export function stackSummary(def: BadgeDef, count: number): string | undefined {

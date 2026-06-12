@@ -81,21 +81,31 @@ export function grantPermissionFor(slug: string): Permission | "badges:award" | 
  * - founder (0): any badge
  * - admin (1): dev, mod, basic (not founder/admin)
  * - dev (2): mod + basic (not founder/admin/dev)
- * - mod (3): basic only (no role badges)
+ * - mod (3): author (4) + basic badges
+ * - author (4): no role grants
  */
 export function canActorGrantBadge(
   actorRank: number,
-  _perms: Set<Permission>,
+  perms: Set<Permission>,
   slug: string
 ): boolean {
   const def = BADGE_BY_SLUG[slug];
   if (!def || !isStaffAwardable(def)) return false;
   if (actorRank >= NO_ROLE_RANK) return false;
+
+  const grantPerm = def.award.grantPermission;
+  if (grantPerm === "auto") return false;
+  if (grantPerm === "badges:award") {
+    if (!perms.has("badges:award")) return false;
+  } else if (!perms.has(grantPerm)) {
+    return false;
+  }
+
   if (actorRank === 0) return true;
 
   const badgeRoleRank = def.role?.rank;
 
-  // Community / posting / recognition — any staff rank
+  // Community / posting / recognition — any staff rank with grant perm
   if (badgeRoleRank === undefined) return true;
 
   // Role badge — actor must outrank target role (lower rank number = more power)

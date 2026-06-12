@@ -1,6 +1,11 @@
 import { type NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
 import { getPost, updatePost, deletePost } from "@/features/blog/services/posts";
+import {
+  parsePostAccountId,
+  resolvePostAuthorAccount,
+} from "@/features/blog/services/post-authors";
 import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 
 type Ctx = { params: Promise<{ slug: string }> };
@@ -39,10 +44,23 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { title, excerpt, content, featuredImage, tags, author, status, date, slug: newSlug } = body;
+  const { title, excerpt, content, featuredImage, tags, status, date, slug: newSlug } = body;
 
   if (newSlug !== undefined && !isValidSlug(String(newSlug))) {
     return Response.json({ error: "Invalid slug — use lowercase letters, numbers, and hyphens" }, { status: 400 });
+  }
+
+  let authorUpdate: { author: string; accountId: number } | undefined;
+  if (body.accountId !== undefined) {
+    const accountId = parsePostAccountId(body.accountId);
+    if (!accountId) {
+      return Response.json({ error: "Pick an author account" }, { status: 400 });
+    }
+    const account = await resolvePostAuthorAccount(accountId);
+    if (!account) {
+      return Response.json({ error: "Selected user cannot be post author" }, { status: 400 });
+    }
+    authorUpdate = { author: account.displayName, accountId: account.id };
   }
 
   try {
@@ -53,13 +71,16 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
         featuredImage: featuredImage ? String(featuredImage) : null,
       }),
       ...(content   !== undefined && { content: sanitizeMarkdownContent(String(content)) }),
-      ...(author    !== undefined && { author:  String(author) }),
+      ...(authorUpdate && { author: authorUpdate.author, accountId: authorUpdate.accountId }),
       ...(status    !== undefined && { status:  status === "published" ? "published" : "draft" }),
       ...(date      !== undefined && { date:    String(date) }),
       ...(newSlug   !== undefined && { slug:    String(newSlug) }),
       tags: parseTags(tags),
     });
     if (!post) return Response.json({ error: "Not found" }, { status: 404 });
+    revalidatePath("/blog");
+    revalidatePath("/admin/posts");
+    revalidatePath(`/admin/posts/${slug}`);
     return Response.json(post);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
@@ -80,5 +101,9 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   }
   const deleted = await deletePost(slug);
   if (!deleted) return Response.json({ error: "Not found" }, { status: 404 });
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${slug}`);
+  revalidatePath("/admin/posts");
+  revalidatePath(`/admin/posts/${slug}`);
   return new Response(null, { status: 204 });
 }

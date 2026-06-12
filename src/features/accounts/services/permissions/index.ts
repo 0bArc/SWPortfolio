@@ -13,5 +13,6 @@ export {
   listPermissions,
   canModerateComments,
   canAccessAdminPanel,
+  canAccessAdminSettings,
 } from "./resolve";
 export { roleLabelsForUser } from "./roles";

@@ -5,7 +5,7 @@ import StyledTagBadge from "./StyledTagBadge";
 
 const classes: Record<TagVariant, string> = {
   glass:
-    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-white/[0.04] border border-white/10 transition-colors hover:text-gray-300",
+    "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-gray-300 bg-white/[0.06] border border-white/10 transition-colors hover:text-white",
   rainbow:
     "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white bg-indigo-600",
   hacker:

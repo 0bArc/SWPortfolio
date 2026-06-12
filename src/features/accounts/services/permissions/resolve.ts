@@ -136,6 +136,18 @@ export function canAccessAdminPanel(perms: Set<Permission>, username: string): b
 
 
 
+/** Site settings in /admin/settings — founder (or env admin) only. */
+
+export function canAccessAdminSettings(slugs: string[], username: string): boolean {
+
+  if (isEnvAdmin(username)) return true;
+
+  return roleRankFromSlugs(slugs) === 0;
+
+}
+
+
+
 export function canModerateComments(perms: Set<Permission>, username: string): boolean {
 
   return (

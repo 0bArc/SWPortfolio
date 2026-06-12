@@ -68,15 +68,16 @@ export default function EditorApiButton({
   );
 }
 
-/** Upload images to POST /api/admin/images — returns url + alt per file. */
+/** Upload images — returns url + alt per file. */
 export async function uploadEditorImages(
-  files: File[]
+  files: File[],
+  uploadPath = "/api/admin/images"
 ): Promise<{ url: string; alt: string }[]> {
   const out: { url: string; alt: string }[] = [];
   for (const file of files) {
     const body = new FormData();
     body.append("file", file);
-    const res = await fetch("/api/admin/images", { method: "POST", body });
+    const res = await fetch(uploadPath, { method: "POST", body });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error((data as { error?: string }).error ?? "Upload failed");

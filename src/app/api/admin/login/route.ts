@@ -12,6 +12,7 @@ import {
   ACCOUNT_SESSION_COOKIE,
   getAccountSession,
 } from "@/features/accounts/services/auth/session";
+import { getAdminBridgeInfo } from "@/features/admin/services/bridge";
 
 async function issueAdminSession(): Promise<NextResponse> {
   const secret = adminConfig.sessionSecret.trim();
@@ -61,25 +62,8 @@ async function tryStaffAccountLogin(
 
 /** Already signed in on site with staff perms → one-click admin session. */
 export async function GET(): Promise<Response> {
-  const session = await getAccountSession();
-  if (!session) {
-    return NextResponse.json({ canBridge: false });
-  }
-
-  const row = await getAccountByUsername(session.username);
-  if (!row || row.banned_at) {
-    return NextResponse.json({ canBridge: false });
-  }
-
-  const perms = await resolvePermissions(row.id, row.username);
-  if (!canAccessAdminPanel(perms, row.username)) {
-    return NextResponse.json({ canBridge: false });
-  }
-
-  return NextResponse.json({
-    canBridge: true,
-    username: session.username,
-    displayName: session.displayName,
+  return NextResponse.json(await getAdminBridgeInfo(), {
+    headers: { "Cache-Control": "private, no-store" },
   });
 }
 

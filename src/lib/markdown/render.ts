@@ -1,8 +1,14 @@
 import { Marked } from "marked";
 import hljs from "highlight.js";
+import { normalizeMarkdownNewlines } from "@/lib/markdown/normalize";
 import { sanitizeMarkdownHtml, sanitizeMarkdownUrl } from "@/lib/markdown/urls";
 
 export const PENDING_IMAGE_ALT = "__pending_image__";
+export const CAROUSEL_DEFAULT_SLOTS = 3;
+
+export function emptyCarouselSlides(count = CAROUSEL_DEFAULT_SLOTS) {
+  return Array.from({ length: count }, () => ({ alt: PENDING_IMAGE_ALT, url: "" }));
+}
 
 const DIM_SUFFIX = String.raw`(?:\{w=(\d+)(?:\s+h=(\d+))?\}|\[([^\]]+)\])`;
 
@@ -84,6 +90,75 @@ function expandButtons(md: string): string {
   });
 }
 
+const FMT_COLORS: Record<string, string> = {
+  red: "#f87171",
+  orange: "#fb923c",
+  amber: "#fbbf24",
+  yellow: "#facc15",
+  lime: "#a3e635",
+  green: "#4ade80",
+  emerald: "#34d399",
+  cyan: "#22d3ee",
+  sky: "#38bdf8",
+  blue: "#60a5fa",
+  indigo: "#818cf8",
+  violet: "#a78bfa",
+  purple: "#c084fc",
+  pink: "#f472b6",
+  rose: "#fb7185",
+  white: "#f5f5f5",
+  gray: "#9ca3af",
+};
+
+/** `--` / `---` on own line → thematic break; ensure blank line before hr. */
+function normalizeDividers(md: string): string {
+  return md
+    .replace(/^--\s*$/gm, "---")
+    .replace(/([^\n])\n(---+|___+|\*\*\*+)\s*$/gm, "$1\n\n$2");
+}
+
+const CODE_PLACEHOLDER = "\uE000CODE";
+
+function protectCodeSegments(md: string): { text: string; chunks: string[] } {
+  const chunks: string[] = [];
+  const text = md.replace(/```[\s\S]*?```|`[^`\n]+`/g, (m) => {
+    chunks.push(m);
+    return `${CODE_PLACEHOLDER}${chunks.length - 1}\uE001`;
+  });
+  return { text, chunks };
+}
+
+function restoreCodeSegments(md: string, chunks: string[]): string {
+  return md.replace(new RegExp(`${CODE_PLACEHOLDER}(\\d+)\uE001`, "g"), (_, i) => chunks[Number(i)] ?? "");
+}
+
+function expandInlineFormats(md: string): string {
+  let out = md;
+  out = out.replace(/\[\[b\]\]([\s\S]*?)\[\[\/b\]\]/gi, (_, t) => `<strong>${escapeHtml(t)}</strong>`);
+  out = out.replace(/\[\[i\]\]([\s\S]*?)\[\[\/i\]\]/gi, (_, t) => `<em>${escapeHtml(t)}</em>`);
+  out = out.replace(/\[\[u\]\]([\s\S]*?)\[\[\/u\]\]/gi, (_, t) => `<span class="blog-u">${escapeHtml(t)}</span>`);
+  out = out.replace(
+    /\[\[mark\]\]([\s\S]*?)\[\[\/mark\]\]/gi,
+    (_, t) => `<mark class="blog-mark">${escapeHtml(t)}</mark>`
+  );
+  out = out.replace(/\[\[color:([#a-z0-9]+)\]\]([\s\S]*?)\[\[\/color\]\]/gi, (_, c, t) => {
+    const key = c.toLowerCase();
+    const color = FMT_COLORS[key] ?? (key.startsWith("#") ? key : FMT_COLORS.gray);
+    return `<span class="blog-color" style="color:${escapeAttr(color)}">${escapeHtml(t)}</span>`;
+  });
+  out = out.replace(
+    /\[\[size:([0-9.]+)(px|rem|%)?\]\]([\s\S]*?)\[\[\/size\]\]/gi,
+    (_, n, unit, t) =>
+      `<span class="blog-size" style="font-size:${n}${unit || "px"}">${escapeHtml(t)}</span>`
+  );
+  return out;
+}
+
+function expandInlineFormatsSafe(md: string): string {
+  const { text, chunks } = protectCodeSegments(md);
+  return restoreCodeSegments(expandInlineFormats(text), chunks);
+}
+
 function parseBracketDims(raw: string): { w?: number; h?: number } {
   const out: { w?: number; h?: number } = {};
   for (const part of raw.split(";")) {
@@ -148,6 +223,10 @@ export function serializeCarousel(
   return `:::carousel${dimSuffix(w, h)}\n${body}\n:::\n`;
 }
 
+export function carouselPlaceholder(count = CAROUSEL_DEFAULT_SLOTS): string {
+  return serializeCarousel(emptyCarouselSlides(count));
+}
+
 export type ImageBlockData = {
   type: "image";
   alt: string;
@@ -170,6 +249,7 @@ export type CarouselBlockData = {
 export type ContentBlock = ImageBlockData | CarouselBlockData;
 
 export function parseContentBlocks(md: string): ContentBlock[] {
+  md = normalizeMarkdownNewlines(md);
   const carousels: CarouselBlockData[] = [];
   const carouselRe = new RegExp(CAROUSEL_RE.source, "g");
   let cm: RegExpExecArray | null;
@@ -275,6 +355,7 @@ export function stripPendingBlocks(md: string): string {
 
 export function createBlogMarked() {
   return new Marked({
+    breaks: true,
     renderer: {
       link({ href, title, tokens }) {
         const text = this.parser.parseInline(tokens);
@@ -299,8 +380,10 @@ export function createBlogMarked() {
 }
 
 export function renderBlogMarkdown(md: string): string {
-  const cleaned = stripPendingBlocks(md);
-  const expanded = expandButtons(expandCarousels(expandSizedImages(cleaned)));
+  const cleaned = stripPendingBlocks(normalizeMarkdownNewlines(md));
+  const withDividers = normalizeDividers(cleaned);
+  const withFormats = expandInlineFormatsSafe(withDividers);
+  const expanded = expandButtons(expandCarousels(expandSizedImages(withFormats)));
   const html = createBlogMarked().parse(expanded) as string;
   return sanitizeMarkdownHtml(html);
 }

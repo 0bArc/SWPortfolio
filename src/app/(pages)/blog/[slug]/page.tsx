@@ -6,7 +6,8 @@ import Navbar from "@/components/layout/NavbarWrapper";
 import Footer from "@/components/layout/FooterWrapper";
 import TagBadge from "@/features/blog/components/TagBadge";
 import PostAuthor from "@/features/blog/components/PostAuthor";
-import { getPublishedPost } from "@/features/blog/services/posts";
+import { getPublishedPost, lookupAccountIcons } from "@/features/blog/services/posts";
+import { getPostAuthorDisplayBadge } from "@/features/blog/services/post-authors";
 import { renderBlogMarkdown } from "@/lib/markdown/render";
 import BlogProse from "@/features/blog/components/BlogProse";
 import PostComments from "@/features/blog/components/PostComments";
@@ -44,6 +45,26 @@ async function PostContent({ params }: { params: Promise<{ slug: string }> }) {
       year: "numeric",
     });
 
+  const authorBadge = post.accountId
+    ? await getPostAuthorDisplayBadge(post.accountId)
+    : null;
+
+  let authorIcon = post.authorIcon ?? null;
+  if (!authorIcon) {
+    try {
+      const icons = await lookupAccountIcons(
+        post.authorUsername ? [post.authorUsername] : [],
+        [post.author]
+      );
+      authorIcon =
+        (post.authorUsername ? icons.get(`user:${post.authorUsername}`) : undefined) ??
+        icons.get(`name:${post.author.toLowerCase()}`) ??
+        null;
+    } catch {
+      // optional
+    }
+  }
+
   return (
     <>
       <Link
@@ -54,17 +75,22 @@ async function PostContent({ params }: { params: Promise<{ slug: string }> }) {
         {tr("blog.back")}
       </Link>
 
-      <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">{post.title}</h1>
+      <h1 className="text-[26px] md:text-[31px] font-bold tracking-tight leading-tight mb-3">{post.title}</h1>
 
-      <div className="flex flex-col gap-3 mb-8 pb-6 border-b border-white/[0.12]">
-        <div className="flex items-center gap-4 flex-wrap">
-          <PostAuthor />
-          <div className="flex flex-wrap gap-1.5">
-            {post.tags.map((tag) => (
-              <TagBadge key={tag} tag={tag} href={`/blog?tag=${tag}`} />
-            ))}
-          </div>
-        </div>
+      <div className="flex flex-col gap-2 mb-6 pb-5 border-b border-white/[0.12]">
+        <PostAuthor
+          name={post.author}
+          username={post.authorUsername}
+          icon={authorIcon}
+          badge={authorBadge}
+          tags={
+            <div className="flex flex-wrap gap-1.5">
+              {post.tags.map((tag) => (
+                <TagBadge key={tag} tag={tag} href={`/blog?tag=${tag}`} />
+              ))}
+            </div>
+          }
+        />
         <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-gray-600 font-bold uppercase tracking-wider">
           <span>{fmtDate(post.date)}</span>
           <span>·</span>

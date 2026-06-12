@@ -23,7 +23,11 @@ export function rateLimit(
 
   entry.count += 1;
   if (entry.count > max) {
-    return Response.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+    const retryAfter = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+    return Response.json(
+      { error: "Too many attempts. Try again later." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
   }
   return null;
 }
@@ -63,7 +67,11 @@ export function rateLimitAccount(
 
   entry.count += 1;
   if (entry.count > max) {
-    return Response.json({ error: "Too many requests. Try again later." }, { status: 429 });
+    const retryAfter = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+    return Response.json(
+      { error: "Too many requests. Try again later." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
   }
   return null;
 }
@@ -74,4 +82,33 @@ export function clientIp(request: NextRequest): string {
     request.headers.get("x-real-ip") ??
     "unknown"
   );
+}
+
+const keyedBuckets = new Map<string, { count: number; resetAt: number }>();
+
+/** Generic keyed rate limit (key prefix, account id, etc.). */
+export function rateLimitKeyed(
+  bucketId: string,
+  action: string,
+  max: number,
+  windowMs: number
+): Response | null {
+  const key = `${action}:${bucketId}`;
+  const now = Date.now();
+  const entry = keyedBuckets.get(key);
+
+  if (!entry || now >= entry.resetAt) {
+    keyedBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return null;
+  }
+
+  entry.count += 1;
+  if (entry.count > max) {
+    const retryAfter = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+    return Response.json(
+      { error: "Too many requests. Try again later." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+  return null;
 }

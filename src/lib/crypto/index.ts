@@ -4,7 +4,7 @@ const ENC_PREFIX = "enc1:";
 const IV_LEN = 12;
 const KEY_LEN = 32;
 
-export type TokenPurpose = "session" | "email_verify";
+export type TokenPurpose = "session" | "email_verify" | "api_key";
 
 function parseKey(raw: string): Buffer {
   const trimmed = raw.trim();

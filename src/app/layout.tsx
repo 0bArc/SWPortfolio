@@ -6,7 +6,6 @@ import { CookieConsentProvider } from "@/providers/CookieConsentProvider";
 import AppProviders from "@/components/providers/AppProviders";
 import AccountSessionLoader from "@/components/providers/AccountSessionLoader";
 import Banner from "@/components/layout/Banner";
-import { SiteLinks } from "@/features/home/site-links";
 import type { CSSProperties } from "react";
 
 const inter = Inter({
@@ -40,7 +39,6 @@ export default function RootLayout({
     >
       <body className="min-h-screen selection:bg-white selection:text-black" suppressHydrationWarning>
         {showBanner && <Banner message={process.env.NEXT_PUBLIC_BANNER!} height={BANNER_H} />}
-        <SiteLinks />
         <CookieConsentProvider>
           <Suspense fallback={<AppProviders>{children}</AppProviders>}>
             <AccountSessionLoader>{children}</AccountSessionLoader>

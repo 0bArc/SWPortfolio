@@ -1,0 +1,52 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { getAccountSessionId } from "@/features/accounts/services/auth/session";
+import { listPostsByAccount } from "@/features/blog/services/posts";
+import AdminPostsList from "@/features/admin/components/AdminPostsList";
+
+export const metadata: Metadata = { title: "Posts – Author" };
+
+export default async function AuthorEditorPage() {
+  const accountId = await getAccountSessionId();
+  const posts = accountId ? await listPostsByAccount(accountId) : [];
+
+  return (
+    <div className="p-4 md:p-8 max-w-5xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-1">
+            Content
+          </p>
+          <h1 className="text-2xl font-bold text-white">Posts</h1>
+        </div>
+        <Link
+          href="/author/editor/new"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-black text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          New post
+        </Link>
+      </div>
+
+      {posts.length === 0 ? (
+        <div className="glass rounded-xl p-12 text-center">
+          <p className="text-sm text-gray-600 mb-4">No posts yet.</p>
+          <Link
+            href="/author/editor/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Write your first post
+          </Link>
+        </div>
+      ) : (
+        <AdminPostsList
+          initialPosts={posts}
+          editBasePath="/author/editor"
+          deleteApiBase="/api/author/posts"
+        />
+      )}
+    </div>
+  );
+}

@@ -9,13 +9,19 @@ import {
   serializeCarousel,
   isPendingImage,
   PENDING_IMAGE_ALT,
+  carouselPlaceholder,
+  emptyCarouselSlides,
+  CAROUSEL_DEFAULT_SLOTS,
   blockAtCursor,
   type ContentBlock,
+  type CarouselBlockData,
 } from "@/lib/markdown/render";
+import EditorCarouselSlots from "@/features/admin/components/EditorCarouselSlots";
 import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 import BlogProse from "@/features/blog/components/BlogProse";
 import EditorApiButton, { uploadEditorImages } from "@/features/admin/components/EditorApiButton";
-import EditorBlockControls, { EditorSizeFields } from "@/features/admin/components/EditorBlockControls";
+import EditorBlockControls from "@/features/admin/components/EditorBlockControls";
+import { EditorSizeFields } from "@/features/admin/components/EditorSizeFields";
 import {
   Dialog,
   DialogClose,
@@ -25,6 +31,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Pencil, X } from "lucide-react";
 import TagInputPreview from "@/features/admin/components/TagInputPreview";
+import PostAuthorPicker from "@/features/admin/components/PostAuthorPicker";
+import type { PostAuthorCandidate } from "@/features/blog/services/post-authors";
 
 type UploadAction = "image" | "carousel" | "carousel-add";
 
@@ -44,6 +52,7 @@ export interface PostData {
   content: string;
   tags: string;
   author: string;
+  accountId: number | null;
   status: "draft" | "published";
   date: string;
 }
@@ -51,6 +60,12 @@ export interface PostData {
 interface PostEditorProps {
   initial?: Partial<PostData>;
   mode: "create" | "edit";
+  apiBase?: string;
+  uploadPath?: string;
+  afterSavePath?: string;
+  lockAuthor?: boolean;
+  pickAuthor?: boolean;
+  authorsFetchPath?: string;
 }
 
 interface SlashMenu {
@@ -67,11 +82,15 @@ const SLASH_ITEMS: SlashItem[] = [
   { key: "h3",       label: "Heading 3",      tag: "H3",   insert: "### "           },
   { key: "code",     label: "Code block",     tag: "</>",  insert: "```\n\n```\n"   },
   { key: "quote",    label: "Quote",          tag: "❝",    insert: "> "             },
-  { key: "div",      label: "Divider",        tag: "—",    insert: "---\n"          },
+  { key: "div",      label: "Divider",        tag: "—",    insert: "\n\n---\n\n"    },
   { key: "ul",       label: "Bullet list",    tag: "•",    insert: "- "             },
   { key: "ol",       label: "Numbered list",  tag: "1.",   insert: "1. "            },
   { key: "bold",     label: "Bold",           tag: "B",    insert: "**text**"       },
   { key: "italic",   label: "Italic",         tag: "I",    insert: "*text*"         },
+  { key: "underline", label: "Underline",     tag: "U",    insert: "[[u]]text[[/u]]" },
+  { key: "highlight", label: "Highlight",     tag: "H",    insert: "[[mark]]text[[/mark]]" },
+  { key: "color",    label: "Color text",     tag: "C",    insert: "[[color:violet]]text[[/color]]" },
+  { key: "size",     label: "Text size",      tag: "Sz",   insert: "[[size:18px]]text[[/size]]" },
   { key: "link",     label: "Link",           tag: "↗",    insert: "[text](https://)"    },
   { key: "button",   label: "Button",         tag: "Btn",  insert: "![button](https://)[text:Click me][color:white][position:center]\n" },
   { key: "image",    label: "Image",          tag: "🖼",   action: "image"          },
@@ -115,7 +134,7 @@ function detectSlash(value: string, cursor: number): { slashPos: number; query: 
 }
 
 const IMAGE_PLACEHOLDER = `![${PENDING_IMAGE_ALT}]()\n`;
-const CAROUSEL_PLACEHOLDER = `:::carousel\n![${PENDING_IMAGE_ALT}]()\n:::\n`;
+const CAROUSEL_PLACEHOLDER = carouselPlaceholder();
 
 const skeletonCls =
   "w-full min-h-[10rem] sm:min-h-[8rem] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04] flex items-center justify-center text-sm sm:text-xs font-medium text-gray-400 cursor-pointer hover:border-white/35 hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors";
@@ -128,14 +147,14 @@ function EditorContentPreview({
   content,
   onChange,
   onRequestUpload,
-  onAddCarouselSlides,
+  onCarouselSlotUpload,
   uploading,
   className,
 }: {
   content: string;
   onChange: (next: string) => void;
   onRequestUpload: (block: ContentBlock) => void;
-  onAddCarouselSlides: (block: ContentBlock, files: File[]) => Promise<void>;
+  onCarouselSlotUpload: (block: CarouselBlockData, slotIndex: number, files: File[]) => Promise<void>;
   uploading: boolean;
   className?: string;
 }) {
@@ -210,27 +229,19 @@ function EditorContentPreview({
           );
         }
 
-        const pending =
-          !block.slides.length ||
-          block.slides.every((s) => isPendingImage(s.alt, s.url));
         const filled = block.slides.filter((s) => !isPendingImage(s.alt, s.url));
 
         return (
-          <div key={`car-${block.start}`} className="my-4 not-prose">
-            {pending ? (
-              <button
-                type="button"
-                className={`admin-btn admin-btn--outline admin-btn--sm ${skeletonCls} aspect-video w-full h-auto min-h-[10rem]`}
-                onClick={() => onRequestUpload(block)}
-                disabled={uploading}
-              >
-                {uploading ? "Uploading…" : "Tap to add carousel images"}
-              </button>
-            ) : (
+          <div key={`car-${block.start}`} className="my-4 not-prose space-y-3">
+            <EditorCarouselSlots
+              block={block}
+              uploading={uploading}
+              onPatch={(raw) => patchBlock(block, raw)}
+              onUploadSlot={(slotIndex, files) => onCarouselSlotUpload(block, slotIndex, files)}
+            />
+            {filled.length > 0 && (
               <BlogProse
-                html={renderBlogMarkdown(
-                  serializeCarousel(filled, block.w, block.h).trimEnd()
-                )}
+                html={renderBlogMarkdown(serializeCarousel(filled, block.w, block.h).trimEnd())}
                 className="prose-blog"
               />
             )}
@@ -238,34 +249,9 @@ function EditorContentPreview({
               label="Carousel size"
               w={block.w}
               h={block.h}
-              onW={(w) =>
-                patchBlock(
-                  block,
-                  serializeCarousel(pending ? block.slides : filled, w, block.h)
-                )
-              }
-              onH={(h) =>
-                patchBlock(
-                  block,
-                  serializeCarousel(pending ? block.slides : filled, block.w, h)
-                )
-              }
+              onW={(w) => patchBlock(block, serializeCarousel(block.slides.length ? block.slides : emptyCarouselSlides(), w, block.h))}
+              onH={(h) => patchBlock(block, serializeCarousel(block.slides.length ? block.slides : emptyCarouselSlides(), block.w, h))}
             />
-            {!pending && (
-              <div className="mt-2 flex items-center gap-2 flex-wrap">
-                <EditorApiButton
-                  multiple
-                  disabled={uploading}
-                  size="xs"
-                  onUpload={(files) => onAddCarouselSlides(block, files)}
-                >
-                  Add slide
-                </EditorApiButton>
-                <span className="text-[11px] text-gray-500">
-                  {filled.length} slide{filled.length === 1 ? "" : "s"}
-                </span>
-              </div>
-            )}
           </div>
         );
       })}
@@ -281,7 +267,16 @@ function PaneLabel({ children }: { children: string }) {
   );
 }
 
-export default function PostEditor({ initial, mode }: PostEditorProps) {
+export default function PostEditor({
+  initial,
+  mode,
+  apiBase = "/api/admin/posts",
+  uploadPath = "/api/admin/images",
+  afterSavePath = "/admin/posts",
+  lockAuthor = false,
+  pickAuthor = !lockAuthor,
+  authorsFetchPath,
+}: PostEditorProps) {
   const router = useRouter();
   const taRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -301,7 +296,8 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     featuredImage: initial?.featuredImage ?? "",
     content: initial?.content ?? "",
     tags:    initial?.tags    ?? "",
-    author:  initial?.author  ?? "Sander Kristiansen",
+    author:  initial?.author  ?? "",
+    accountId: initial?.accountId ?? null,
     status:  initial?.status  ?? "draft",
     date:    initial?.date    ?? new Date().toISOString().slice(0, 10),
   });
@@ -435,22 +431,50 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     return () => document.removeEventListener("mousedown", onDown);
   }, [slash.active]);
 
+  function mergeCarouselUpload(
+    block: CarouselBlockData,
+    uploads: { alt: string; url: string }[],
+    slotIndex?: number
+  ): string {
+    const slots =
+      block.slides.length > 0 ? [...block.slides] : emptyCarouselSlides(CAROUSEL_DEFAULT_SLOTS);
+
+    if (slotIndex !== undefined) {
+      const slide = uploads[0];
+      if (!slide) return serializeCarousel(slots, block.w, block.h);
+      while (slots.length <= slotIndex) slots.push(...emptyCarouselSlides(1));
+      slots[slotIndex] = slide;
+      return serializeCarousel(slots, block.w, block.h);
+    }
+
+    let fi = 0;
+    for (let i = 0; i < slots.length && fi < uploads.length; i++) {
+      if (isPendingImage(slots[i].alt, slots[i].url)) {
+        slots[i] = uploads[fi++];
+      }
+    }
+    while (fi < uploads.length) slots.push(uploads[fi++]);
+    return serializeCarousel(slots, block.w, block.h);
+  }
+
   async function applyBlockUpload(files: File[], pending: { start: number; end: number; action: UploadAction }) {
-    const uploaded = await uploadEditorImages(files);
+    const uploaded = await uploadEditorImages(files, uploadPath);
     const slides = uploaded.map((u) => ({ alt: u.alt, url: u.url }));
 
     setForm((prev) => {
       let insert = "";
       if (pending.action === "image") {
         insert = serializeImage(slides[0].alt, slides[0].url);
-      } else if (pending.action === "carousel-add") {
+      } else {
         const block = parseContentBlocks(prev.content).find((b) => b.start === pending.start);
         if (block?.type === "carousel") {
-          const existing = block.slides.filter((s) => !isPendingImage(s.alt, s.url));
-          insert = serializeCarousel([...existing, ...slides], block.w, block.h);
+          insert =
+            pending.action === "carousel-add"
+              ? mergeCarouselUpload(block, slides)
+              : mergeCarouselUpload(block, slides);
+        } else {
+          insert = serializeCarousel(slides);
         }
-      } else {
-        insert = serializeCarousel(slides);
       }
       if (!insert) return prev;
       return {
@@ -472,15 +496,25 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     fileRef.current.click();
   }
 
-  async function handleAddCarouselSlides(block: ContentBlock, files: File[]) {
+  async function handleCarouselSlotUpload(
+    block: CarouselBlockData,
+    slotIndex: number,
+    files: File[]
+  ) {
     setUploading(true);
     setSaveError("");
     try {
-      await applyBlockUpload(files, {
-        start: block.start,
-        end: block.end,
-        action: "carousel-add",
-      });
+      const uploaded = await uploadEditorImages(files.slice(0, 1), uploadPath);
+      const slides = uploaded.map((u) => ({ alt: u.alt, url: u.url }));
+      setForm((prev) => ({
+        ...prev,
+        content: replaceRange(
+          prev.content,
+          block.start,
+          block.end,
+          mergeCarouselUpload(block, slides, slotIndex)
+        ),
+      }));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -507,7 +541,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
   }
 
   async function handleFeaturedUpload(files: File[]) {
-    const [uploaded] = await uploadEditorImages(files);
+    const [uploaded] = await uploadEditorImages(files, uploadPath);
     set("featuredImage", uploaded.url);
   }
 
@@ -515,28 +549,33 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
     setSaving(true);
     setSaveError("");
     try {
+      if (pickAuthor && !form.accountId) {
+        throw new Error("Pick an author");
+      }
       const tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
       const content = sanitizeMarkdownContent(form.content);
       const url =
         mode === "create"
-          ? "/api/admin/posts"
-          : `/api/admin/posts/${initial?.slug ?? form.slug}`;
+          ? apiBase
+          : `${apiBase}/${initial?.slug ?? form.slug}`;
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           ...form,
           content,
           tags,
           status,
           featuredImage: form.featuredImage || null,
+          ...(pickAuthor ? { accountId: form.accountId } : {}),
         }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { error?: string }).error ?? `Save failed (${res.status})`);
       }
-      await router.push("/admin/posts");
+      await router.push(afterSavePath);
       router.refresh();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Save failed");
@@ -569,7 +608,28 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
         </div>
         <div>
           <label className="admin-label">Author</label>
-          <input className="admin-input" value={form.author} onChange={e => set("author", e.target.value)} />
+          {pickAuthor ? (
+            <PostAuthorPicker
+              value={form.accountId}
+              label="Pick author…"
+              initialName={form.author}
+              fetchPath={authorsFetchPath}
+              onChange={(author: PostAuthorCandidate) =>
+                setForm((p) => ({
+                  ...p,
+                  accountId: author.id,
+                  author: author.displayName,
+                }))
+              }
+            />
+          ) : (
+            <input
+              className="admin-input"
+              value={form.author}
+              readOnly={lockAuthor}
+              onChange={e => set("author", e.target.value)}
+            />
+          )}
         </div>
       </div>
 
@@ -714,7 +774,11 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
                       content: replaceRange(prev.content, activeBlock.start, activeBlock.end, raw),
                     }))
                   }
-                  onAddCarouselSlides={(files) => handleAddCarouselSlides(activeBlock, files)}
+                  onCarouselSlotUpload={(slotIndex, files) =>
+                    activeBlock.type === "carousel"
+                      ? handleCarouselSlotUpload(activeBlock, slotIndex, files)
+                      : Promise.resolve()
+                  }
                 />
               )}
             </div>
@@ -725,7 +789,7 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
                 uploading={uploading}
                 onChange={(next) => set("content", next)}
                 onRequestUpload={requestBlockUpload}
-                onAddCarouselSlides={handleAddCarouselSlides}
+                onCarouselSlotUpload={handleCarouselSlotUpload}
                 className="flex-1 min-h-[40vh] md:min-h-0 max-h-none p-3 sm:p-4"
               />
             </div>
@@ -750,7 +814,18 @@ export default function PostEditor({ initial, mode }: PostEditorProps) {
             onChange={e => set("tags", e.target.value)}
           />
           <TagInputPreview tags={form.tags} />
-          <p className="mt-1 text-[11px] text-gray-500">Comma-separated · styled in <a href="/admin/tags" className="text-gray-400 hover:text-white underline">Tags</a></p>
+          <p className="mt-1 text-[11px] text-gray-500">
+            Comma-separated
+            {!lockAuthor && (
+              <>
+                {" "}
+                · styled in{" "}
+                <a href="/admin/tags" className="text-gray-400 hover:text-white underline">
+                  Tags
+                </a>
+              </>
+            )}
+          </p>
         </div>
         <div>
           <label className="admin-label">Publish date</label>

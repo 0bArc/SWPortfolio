@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-.site-meta { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; pointer-events: none; }
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -207,6 +205,13 @@
 
   .prose-blog strong { @apply text-white font-semibold; }
   .prose-blog em { @apply text-gray-300 italic; }
+  .prose-blog .blog-u { text-decoration: underline; text-underline-offset: 3px; }
+  .prose-blog .blog-mark {
+    background: rgba(250, 204, 21, 0.22);
+    color: rgb(254 249 195);
+    padding: 0 0.2em;
+    border-radius: 0.15rem;
+  }
 
   /* Inline code */
   .prose-blog :not(pre) > code {
@@ -299,6 +304,70 @@
   .admin-btn--md { @apply h-9 px-4 text-sm; }
   .admin-btn--lg { @apply h-10 px-5 text-sm font-semibold; }
   .admin-btn--icon { @apply size-9 p-0; }
+
+  .admin-ctx-menu {
+    z-index: 50;
+    min-width: 11rem;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: #0a0a0a !important;
+    color: rgb(156 163 175);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85) !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    outline: none;
+  }
+  .admin-ctx-menu [data-slot="context-menu-label"] {
+    padding: 0.375rem 0.5rem 0.25rem;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(75 85 99);
+  }
+  .admin-ctx-menu [data-slot="context-menu-item"] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.4375rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    color: rgb(156 163 175);
+    cursor: default;
+    outline: none;
+    transition: background-color 0.1s, color 0.1s;
+  }
+  .admin-ctx-menu [data-slot="context-menu-item"]:focus,
+  .admin-ctx-menu [data-slot="context-menu-item"]:focus-visible {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #fff !important;
+  }
+  .admin-ctx-menu [data-slot="context-menu-item"]:focus svg,
+  .admin-ctx-menu [data-slot="context-menu-item"]:focus-visible svg {
+    color: #fff !important;
+  }
+  .admin-ctx-menu [data-slot="context-menu-item"][data-variant="destructive"] {
+    color: rgb(248 113 113);
+  }
+  .admin-ctx-menu [data-slot="context-menu-item"][data-variant="destructive"]:focus,
+  .admin-ctx-menu [data-slot="context-menu-item"][data-variant="destructive"]:focus-visible {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: rgb(248 113 113) !important;
+  }
+  .admin-ctx-menu [data-slot="context-menu-item"][data-variant="destructive"]:focus svg,
+  .admin-ctx-menu [data-slot="context-menu-item"][data-variant="destructive"]:focus-visible svg {
+    color: rgb(248 113 113) !important;
+  }
+  .admin-ctx-menu [data-slot="context-menu-item"][data-disabled] {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .admin-ctx-menu [data-slot="context-menu-separator"] {
+    margin: 0.25rem -0.25rem;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.08);
+  }
 
   /* Images */
   .prose-blog img {

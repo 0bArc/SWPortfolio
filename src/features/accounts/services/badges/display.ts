@@ -1,4 +1,5 @@
 import type { AccountBadge, AccountSettings } from "@/database/schema";
+import { isHiddenBadgeSlug } from "@/features/accounts/services/badges/catalog";
 
 export type BadgeLayout = Pick<AccountSettings, "badgeOrder" | "hiddenBadgeSlugs">;
 
@@ -30,7 +31,7 @@ export function applyBadgeLayout(
   const ordered = orderBadges(badges, layout.badgeOrder);
   if (options?.includeHidden) return ordered;
   const hidden = new Set(layout.hiddenBadgeSlugs);
-  return ordered.filter((b) => !hidden.has(b.slug));
+  return ordered.filter((b) => !hidden.has(b.slug) && !isHiddenBadgeSlug(b.slug));
 }
 
 export function reorderSlugs(slugs: string[], fromSlug: string, toSlug: string): string[] {

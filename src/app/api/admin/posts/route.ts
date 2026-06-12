@@ -1,5 +1,10 @@
 import { type NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
+import {
+  parsePostAccountId,
+  resolvePostAuthorAccount,
+} from "@/features/blog/services/post-authors";
 import { listPosts, createPost } from "@/features/blog/services/posts";
 import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 
@@ -7,6 +12,26 @@ function parseTags(raw: unknown): string[] {
   if (Array.isArray(raw)) return raw.map(String).map((t) => t.trim()).filter(Boolean);
   if (typeof raw === "string") return raw.split(",").map((t) => t.trim()).filter(Boolean);
   return [];
+}
+
+async function resolveAuthorFromBody(body: Record<string, unknown>) {
+  const accountId = parsePostAccountId(body.accountId);
+  if (!accountId) {
+    return Response.json(
+      { error: "Pick an author with Author badge or Admin+ staff role" },
+      { status: 400 }
+    );
+  }
+
+  const account = await resolvePostAuthorAccount(accountId);
+  if (!account) {
+    return Response.json(
+      { error: "Selected user cannot be post author" },
+      { status: 400 }
+    );
+  }
+
+  return { author: account.displayName, accountId: account.id };
 }
 
 export async function GET() {
@@ -27,7 +52,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { slug, title, excerpt, content, featuredImage, tags, author, status, date } = body;
+  const { slug, title, excerpt, content, featuredImage, tags, status, date } = body;
   if (!slug || !title || !date) {
     return Response.json({ error: "Missing required fields: slug, title, date" }, { status: 400 });
   }
@@ -37,6 +62,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid slug — use lowercase letters, numbers, and hyphens" }, { status: 400 });
   }
 
+  const authorFields = await resolveAuthorFromBody(body);
+  if (authorFields instanceof Response) return authorFields;
+
   try {
     const post = await createPost({
       slug: slugStr,
@@ -45,10 +73,13 @@ export async function POST(request: NextRequest) {
       content: content ? sanitizeMarkdownContent(String(content)) : "",
       featuredImage: featuredImage ? String(featuredImage) : null,
       tags: parseTags(tags),
-      author: author ? String(author) : "Sander Kristiansen",
+      author: authorFields.author,
+      accountId: authorFields.accountId,
       status: status === "published" ? "published" : "draft",
       date: String(date),
     });
+    revalidatePath("/blog");
+    revalidatePath("/admin/posts");
     return Response.json(post, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";

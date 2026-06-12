@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 type Props = {
   username: string;
   displayName: string;
@@ -12,19 +16,27 @@ function initials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export default function AccountAvatar({ username, displayName, icon, size = 36, className = "" }: Props) {
+export default function AccountAvatar({
+  username,
+  displayName,
+  icon,
+  size = 36,
+  className = "",
+}: Props) {
+  const [broken, setBroken] = useState(false);
   const dim = { width: size, height: size };
 
-  if (icon) {
+  if (icon && !broken) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={icon}
-        alt={displayName}
+        alt=""
         width={size}
         height={size}
         className={`shrink-0 self-start rounded-full border border-white/10 object-cover bg-white/5 ${className}`}
         style={dim}
+        onError={() => setBroken(true)}
       />
     );
   }

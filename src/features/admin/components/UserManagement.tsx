@@ -11,10 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { AccountListItem, AccountSettings } from "@/database/schema";
-import { BADGES } from "@/features/accounts/services/badges/definitions";
-import { isStaffAwardable } from "@/features/accounts/services/badges/award";
-
-const GRANTABLE_BADGES = BADGES.filter(isStaffAwardable);
+import { BADGE_BY_SLUG, BADGES } from "@/features/accounts/services/badges/definitions";
 import { roleLabelsForUser } from "@/features/accounts/services/permissions/roles";
 import {
   Dialog,
@@ -53,6 +50,7 @@ const ROLE_STYLES: Record<string, string> = {
   Administrator: "bg-violet-500/15 text-violet-300 border-violet-500/35",
   Developer: "bg-sky-500/15 text-sky-300 border-sky-500/35",
   Moderator: "bg-amber-500/15 text-amber-300 border-amber-500/35",
+  Author: "bg-violet-500/15 text-violet-300 border-violet-500/35",
   Member: "bg-white/[0.06] text-gray-400 border-white/12",
 };
 
@@ -100,10 +98,12 @@ function SettingToggle({
 
 function UserEditor({
   user,
+  grantableSlugs,
   onUpdated,
   onDeleted,
 }: {
   user: AccountListItem;
+  grantableSlugs: string[];
   onUpdated: (u: AccountListItem) => void;
   onDeleted: () => void;
 }) {
@@ -126,7 +126,6 @@ function UserEditor({
     setDraft(user);
     setDisplayName(user.displayName);
     setBio(user.bio);
-    setTab("profile");
     setError("");
     setMessage("");
     setDeleteConfirm(false);
@@ -134,6 +133,10 @@ function UserEditor({
     setBanReason("");
     setBanUntil("");
   }, [user]);
+
+  useEffect(() => {
+    setTab("profile");
+  }, [user.username]);
 
   const roles = roleLabelsForUser(draft.username, draft.badgeSlugs);
 
@@ -426,8 +429,9 @@ function UserEditor({
         <section>
           <p className="text-[11px] text-gray-500 mb-3">Toggle badges to grant or revoke roles.</p>
           <div className="flex flex-wrap gap-2">
-            {GRANTABLE_BADGES.map((def) => {
-              const slug = def.slug;
+            {grantableSlugs.map((slug) => {
+              const def = BADGE_BY_SLUG[slug];
+              if (!def) return null;
               const active = draft.badgeSlugs.includes(slug);
               const loading = badgeLoading === slug;
               return (
@@ -589,6 +593,7 @@ export default function UserManagement() {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AccountListItem | null>(null);
+  const [grantableSlugs, setGrantableSlugs] = useState<string[]>([]);
   const [error, setError] = useState("");
 
   const load = useCallback(async (p: number, q: string) => {
@@ -615,6 +620,15 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    void fetch("/api/accounts/permissions", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { grantableBadgeSlugs?: string[] } | null) => {
+        setGrantableSlugs(data?.grantableBadgeSlugs ?? []);
+      })
+      .catch(() => setGrantableSlugs([]));
   }, []);
 
   useEffect(() => {
@@ -776,7 +790,12 @@ export default function UserManagement() {
                   @{selected.username}
                 </DialogDescription>
               </DialogHeader>
-              <UserEditor user={selected} onUpdated={handleUpdated} onDeleted={handleDeleted} />
+              <UserEditor
+                user={selected}
+                grantableSlugs={grantableSlugs}
+                onUpdated={handleUpdated}
+                onDeleted={handleDeleted}
+              />
             </>
           )}
         </DialogContent>

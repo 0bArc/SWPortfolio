@@ -1,4 +1,4 @@
--- Reference SQL — keep in sync with src/database/schema.ts (run.bat db pipes this file)
+-- Reference SQL — keep in sync with migrate.sql (run.bat db pipes migrate.sql)
 CREATE TABLE IF NOT EXISTS posts (
   id             SERIAL PRIMARY KEY,
   slug           TEXT UNIQUE NOT NULL,
@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS featured_image TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS account_id INT REFERENCES accounts(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS posts_status_date ON posts (status, date DESC);
+CREATE INDEX IF NOT EXISTS posts_account_id_idx ON posts (account_id);
 
 CREATE TABLE IF NOT EXISTS site_visitors (
   id          SERIAL PRIMARY KEY,

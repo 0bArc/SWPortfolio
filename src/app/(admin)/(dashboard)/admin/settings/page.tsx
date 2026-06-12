@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { resolveAdminActor } from "@/features/accounts/services/permissions/actor";
+import { canAccessAdminSettings } from "@/features/accounts/services/permissions/resolve";
 
 export const metadata: Metadata = { title: "Settings – Admin" };
 
@@ -37,7 +40,13 @@ const SETTINGS: SettingRow[] = [
   },
 ];
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const actor = await resolveAdminActor();
+  const allowed =
+    actor.kind === "full" ||
+    (actor.kind === "account" && canAccessAdminSettings(actor.slugs, actor.username));
+  if (!allowed) redirect("/admin");
+
   return (
     <div className="p-4 md:p-8 max-w-2xl">
       <div className="mb-8">

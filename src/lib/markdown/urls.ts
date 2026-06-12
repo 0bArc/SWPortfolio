@@ -33,9 +33,12 @@ function sanitizeImageLine(line: string): string {
   return safe ? `![${m[1]}](${safe})${m[3] ?? ""}` : "";
 }
 
+import { normalizeMarkdownNewlines } from "@/lib/markdown/normalize";
+
 /** Strip or fix bad urls in saved markdown source. */
 export function sanitizeMarkdownContent(md: string): string {
-  let out = md.replace(/^!\[button\]\(([^)]*)\)([^\n]*)/gm, (line, url, rest) => {
+  let out = normalizeMarkdownNewlines(md);
+  out = out.replace(/^!\[button\]\(([^)]*)\)([^\n]*)/gm, (line, url, rest) => {
     const safe = sanitizeMarkdownUrl(String(url).trim(), "link");
     return safe ? `![button](${safe})${rest}` : "";
   });

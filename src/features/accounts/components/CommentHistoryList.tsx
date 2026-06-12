@@ -26,32 +26,42 @@ export default function CommentHistoryList({ items, compact = false }: Props) {
 
   if (items.length === 0) return null;
 
+  const itemClass = compact ? "text-sm" : "rounded-lg border border-white/[0.08] bg-white/[0.02] p-3";
+  const padClass = compact ? "invisible h-5" : "invisible rounded-lg border border-transparent p-3 min-h-[7.5rem]";
+
   return (
-    <div>
-      <ul className={compact ? "space-y-2" : "space-y-3"}>
-        {slice.map((item) => (
-          <li
-            key={item.id}
-            className={compact ? "text-sm" : "rounded-lg border border-white/[0.08] bg-white/[0.02] p-3"}
-          >
-            <Link
-              href={`/blog/${item.postSlug}`}
-              className={compact ? "text-gray-200 hover:text-white font-medium" : "text-sm font-medium text-gray-200 hover:text-white"}
-            >
-              {item.postTitle}
-            </Link>
-            <p className={`text-xs text-gray-400 ${compact ? "inline ml-2" : "mt-0.5"}`}>
-              {fmtDate(item.createdAt)}
-            </p>
-            {!compact && (
-              <p className="text-sm text-gray-400 mt-2 line-clamp-3">{item.content}</p>
-            )}
-          </li>
-        ))}
+    <div className="flex flex-col">
+      <ul className={compact ? "space-y-2 min-h-[4.5rem]" : "space-y-3 min-h-[24rem]"}>
+        {Array.from({ length: PAGE_SIZE }, (_, i) => {
+          const item = slice[i];
+          if (item) {
+            return (
+              <li key={item.id} className={itemClass}>
+                <Link
+                  href={`/blog/${item.postSlug}`}
+                  className={
+                    compact
+                      ? "text-gray-200 hover:text-white font-medium"
+                      : "text-sm font-medium text-gray-200 hover:text-white"
+                  }
+                >
+                  {item.postTitle}
+                </Link>
+                <p className={`text-xs text-gray-400 ${compact ? "inline ml-2" : "mt-0.5"}`}>
+                  {fmtDate(item.createdAt)}
+                </p>
+                {!compact && (
+                  <p className="text-sm text-gray-400 mt-2 line-clamp-3">{item.content}</p>
+                )}
+              </li>
+            );
+          }
+          return <li key={`pad-${safePage}-${i}`} aria-hidden className={padClass} />;
+        })}
       </ul>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between gap-3 mt-2">
+        <div className="flex shrink-0 items-center justify-between gap-3 mt-2">
           <button
             type="button"
             disabled={safePage === 0}

@@ -8,6 +8,12 @@ type Props = {
   size?: "sm" | "md";
   /** No tooltip/focus — for pickers inside buttons */
   static?: boolean;
+  /** Compact icon + label — e.g. beside post author name */
+  showLabel?: boolean;
+  /** Smaller inline badge — post author row */
+  compact?: boolean;
+  /** Text only, no icon — post author under name */
+  labelOnly?: boolean;
 };
 
 const shellSize = {
@@ -28,33 +34,87 @@ function formatAwarded(iso: string): string {
   });
 }
 
-export default function BadgeIcon({ badge, size = "sm", static: isStatic = false }: Props) {
+export default function BadgeIcon({
+  badge,
+  size = "sm",
+  static: isStatic = false,
+  showLabel = false,
+  compact = false,
+  labelOnly = false,
+}: Props) {
   const { Icon, shell, iconClass } = badgeVisualFor(badge.slug);
-  const tipId = `badge-tip-${badge.slug}`;
+  const tipId = `badge-tip-${badge.slug}-${badge.awardedAt}`;
 
-  const shellEl = (
+  const countEl =
+    badge.count && badge.count > 1 ? (
+      <span className="absolute -bottom-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-0.5 rounded-full bg-[#1c1c1c] border border-white/20 text-[9px] font-semibold text-gray-300 flex items-center justify-center leading-none">
+        {badge.count}
+      </span>
+    ) : null;
+
+  const inlineShell = compact ? "w-5 h-5 ring-1 ring-white/10" : "w-7 h-7 ring-1 ring-white/10";
+  const inlineIcon = compact ? "w-2.5 h-2.5" : "w-3.5 h-3.5";
+
+  const iconShell = (
     <span
-      tabIndex={isStatic ? undefined : 0}
-      role="img"
-      aria-label={isStatic ? undefined : `${badge.label}: ${badge.description}`}
-      aria-describedby={isStatic ? undefined : tipId}
-      aria-hidden={isStatic ? true : undefined}
-      className={`relative inline-flex items-center justify-center rounded-full ${isStatic ? "" : "cursor-default"} ${shellSize[size]} ${shell}`}
+      className={`relative inline-flex shrink-0 items-center justify-center rounded-full ${
+        showLabel ? inlineShell : shellSize[size]
+      } ${shell}`}
+      aria-hidden={showLabel || isStatic ? true : undefined}
     >
-      <Icon className={`${iconSize[size]} ${iconClass}`} strokeWidth={2.25} aria-hidden />
-      {badge.count && badge.count > 1 && (
-        <span className="absolute -bottom-0.5 -right-0.5 min-w-[1.1rem] h-[1.1rem] px-0.5 rounded-full bg-[#1c1c1c] border border-white/20 text-[9px] font-semibold text-gray-300 flex items-center justify-center leading-none">
-          {badge.count}
-        </span>
-      )}
+      <Icon
+        className={`${showLabel ? inlineIcon : iconSize[size]} ${iconClass}`}
+        strokeWidth={compact ? 2 : 2.25}
+        aria-hidden
+      />
+      {countEl}
     </span>
   );
 
-  if (isStatic) return shellEl;
+  const roleColor = labelOnly && iconClass === "text-gray-200" ? "text-gray-500" : iconClass;
+  const labelClass = labelOnly
+    ? `${roleColor} text-xs`
+    : `text-gray-400 ${compact ? "text-[11px]" : "text-xs"}`;
+
+  const labelEl = showLabel ? (
+    <span className={`${labelOnly ? "font-semibold" : "font-medium"} leading-none ${labelClass}`}>
+      {badge.label}
+      {badge.stackLabel && (
+        <span className="font-normal text-gray-500"> · {badge.stackLabel}</span>
+      )}
+    </span>
+  ) : null;
+
+  const trigger = showLabel ? (
+    labelOnly ? (
+      labelEl
+    ) : (
+      <span className={`inline-flex items-center shrink-0 ${compact ? "gap-1" : "gap-1.5"}`}>
+        {iconShell}
+        {labelEl}
+      </span>
+    )
+  ) : (
+    iconShell
+  );
+
+  if (isStatic) return trigger;
+
+  const interactive = (
+    <span
+      tabIndex={0}
+      role="img"
+      aria-label={`${badge.label}: ${badge.description}`}
+      aria-describedby={tipId}
+      className={`inline-flex ${showLabel ? `items-center cursor-default ${compact ? "gap-1" : "gap-1.5"}` : "cursor-default"}`}
+    >
+      {trigger}
+    </span>
+  );
 
   return (
     <span className="group/badge relative inline-flex">
-      {shellEl}
+      {interactive}
       <span
         id={tipId}
         role="tooltip"

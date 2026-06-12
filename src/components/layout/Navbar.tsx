@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 import { SITE_OWNER } from "@/lib/env";
 import { useI18n } from "@/providers/I18nProvider";
 import AccountNav from "@/features/accounts/components/AccountNav";
+import StaffNavLinks from "@/features/accounts/components/StaffNavLinks";
 import NotificationNav from "@/features/notifications/components/NotificationNav";
+import { useAccountSession } from "@/providers/AccountSessionProvider";
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -38,7 +40,9 @@ const mobileLink =
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [staffNav, setStaffNav] = useState(false);
   const { t } = useI18n();
+  const { account } = useAccountSession();
   const pathname = usePathname();
   const isHome = pathname === "/";
   const a = (hash: string) => (isHome ? hash : `/${hash}`);
@@ -55,6 +59,24 @@ export default function Navbar() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!account) {
+      setStaffNav(false);
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/accounts/permissions", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { canAdminPanel?: boolean; canWritePosts?: boolean } | null) => {
+        if (cancelled) return;
+        setStaffNav(!!(data?.canAdminPanel || data?.canWritePosts));
+      })
+      .catch(() => setStaffNav(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [account]);
+
   const links = (
     <>
       <Link href={a("#arbeid")} className={pill} onClick={close}>
@@ -63,15 +85,18 @@ export default function Navbar() {
       <Link href="/blog" className={pill} onClick={close}>
         {t("nav.blog")}
       </Link>
-      <Link
-        href="/profil"
-        className={`${pill} flex items-center gap-1.5`}
-        onClick={close}
-        title={t("nav.profile")}
-      >
-        <GithubIcon className="w-3.5 h-3.5" />
-        <span className="hidden lg:inline">{t("nav.profile")}</span>
-      </Link>
+      <StaffNavLinks pillClass={pill} onNavigate={close} />
+      {!staffNav && (
+        <Link
+          href="/profil"
+          className={`${pill} flex items-center gap-1.5`}
+          onClick={close}
+          title={t("nav.profile")}
+        >
+          <GithubIcon className="w-3.5 h-3.5" />
+          <span className="hidden lg:inline">{t("nav.profile")}</span>
+        </Link>
+      )}
       <NotificationNav pillClass={pill} />
       <AccountNav pillClass={pill} />
     </>
@@ -123,10 +148,13 @@ export default function Navbar() {
               <Link href="/blog" className={mobileLink} onClick={close}>
                 {t("nav.blog")}
               </Link>
-              <Link href="/profil" className={mobileLink} onClick={close}>
-                <GithubIcon className="w-4 h-4" />
-                {t("nav.profile")}
-              </Link>
+              <StaffNavLinks pillClass={mobileLink} onNavigate={close} />
+              {!staffNav && (
+                <Link href="/profil" className={mobileLink} onClick={close}>
+                  <GithubIcon className="w-4 h-4" />
+                  {t("nav.profile")}
+                </Link>
+              )}
               <div className="px-4 py-2 flex items-center gap-2">
                 <NotificationNav />
               </div>

@@ -1,6 +1,8 @@
 import { type NextRequest } from "next/server";
 import { requireAdmin } from "@/features/admin/services/auth";
-import { saveBlogImage } from "@/features/blog/services/images";
+import { getAccountSessionId } from "@/features/accounts/services/auth/session";
+import { saveTrackedImage } from "@/features/media/services/assets";
+import { jsonError } from "@/lib/network/http";
 
 export async function POST(request: NextRequest) {
   const denied = await requireAdmin();
@@ -9,17 +11,25 @@ export async function POST(request: NextRequest) {
   const form = await request.formData();
   const file = form.get("file");
   if (!(file instanceof File)) {
-    return Response.json({ error: "Missing file" }, { status: 400 });
+    return jsonError("Missing file", 400);
   }
 
   const mime = file.type || "application/octet-stream";
   const buf = Buffer.from(await file.arrayBuffer());
+  const accountId = await getAccountSessionId();
 
   try {
-    const { id, url } = await saveBlogImage(buf, mime);
+    const { id, url } = await saveTrackedImage({
+      data: buf,
+      mime,
+      kind: "blog",
+      status: "approved",
+      uploadedByAccountId: accountId,
+      approvedByAccountId: accountId,
+    });
     return Response.json({ id, url }, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Upload failed";
-    return Response.json({ error: msg }, { status: 400 });
+    return jsonError(msg, 400);
   }
 }

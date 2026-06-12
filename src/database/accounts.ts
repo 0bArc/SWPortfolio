@@ -17,7 +17,7 @@ import {
 } from "@/database/schema";
 import type { BridgeProvider, BridgeTokens } from "@/features/accounts/services/auth/bridges";
 import { applyBadgeLayout } from "@/features/accounts/services/badges/display";
-import { grantKeyFor, resolveFeaturedBadge } from "@/features/accounts/services/badges/catalog";
+import { grantKeyFor, resolvePublicDisplayBadge } from "@/features/accounts/services/badges/catalog";
 import { mapBadges, syncBadgesForAccount } from "@/features/accounts/services/badges/service";
 import { parseAccountSettings, settingsToJson } from "@/features/accounts/services/settings/parse";
 import { listCommentsForAccount, type CommentHistoryItem } from "@/database/comments";
@@ -158,6 +158,16 @@ export async function updateAccountIcon(accountId: number, icon: string | null):
     `UPDATE ${ACCOUNTS_TABLE} SET icon = $2, updated_at = NOW() WHERE id = $1`,
     [accountId, icon]
   );
+}
+
+export async function listAccountsReferencingImage(imageId: string): Promise<number[]> {
+  const pool = await getPoolReady();
+  const url = `/api/images/${imageId}`;
+  const { rows } = await pool.query<{ id: number }>(
+    `SELECT id FROM ${ACCOUNTS_TABLE} WHERE icon = $1 OR icon_pending = $1`,
+    [url]
+  );
+  return rows.map((r) => r.id);
 }
 
 /** Member upload — visible to owner only until admin approves. */
@@ -443,7 +453,7 @@ export async function getProfileView(
   await syncBadgesForAccount(row.id, row.username);
   const badgeRows = await listBadgesForAccount(row.id);
   const allBadges = mapBadges(badgeRows);
-  const featuredBadge = resolveFeaturedBadge(allBadges, settings.featuredBadgeSlug);
+  const featuredBadge = resolvePublicDisplayBadge(allBadges, settings.featuredBadgeSlug);
   const publicBadges = applyBadgeLayout(allBadges, settings);
   const badges =
     settings.showBadges || isOwner ? (isOwner ? allBadges : publicBadges) : [];

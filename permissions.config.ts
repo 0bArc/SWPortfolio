@@ -15,13 +15,15 @@ export const PERMISSIONS = {
   "badges:grant:dev": "Grant Developer role badge",
   "badges:grant:admin": "Grant Administrator role badge",
   "badges:grant:founder": "Grant Founder role badge",
+  "badges:grant:author": "Grant Author role badge",
+  "posts:write": "Create and edit own blog posts at /author/editor",
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
 
 export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];
 
-export type RoleId = "founder" | "admin" | "dev" | "mod";
+export type RoleId = "founder" | "admin" | "dev" | "mod" | "author";
 
 /** Env usernames that non-founders must never moderate or badge-edit */
 export const PROTECTED_ACCOUNT_USERNAMES = ["admin"] as const;

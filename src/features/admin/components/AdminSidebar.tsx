@@ -14,17 +14,19 @@ import {
   X,
   Tags,
   Users,
+  Images,
 } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/posts", label: "Posts", icon: FileText, exact: false },
+  { href: "/admin/media", label: "Media", icon: Images, exact: false },
   { href: "/admin/tags", label: "Tags", icon: Tags, exact: false },
   { href: "/admin/users", label: "Users", icon: Users, exact: false },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ showSettings = false }: { showSettings?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -106,7 +108,9 @@ export default function AdminSidebar() {
         </div>
 
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-          {NAV.map(({ href, label, icon, exact }) => navLink(href, label, icon, exact))}
+          {NAV.filter((item) => showSettings || item.href !== "/admin/settings").map(
+            ({ href, label, icon, exact }) => navLink(href, label, icon, exact)
+          )}
         </nav>
 
         <div className="px-2 py-3 border-t border-white/5 space-y-0.5">

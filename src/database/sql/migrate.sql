@@ -18,8 +18,10 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS featured_image TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS account_id INT REFERENCES accounts(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS posts_status_date ON posts (status, date DESC);
+CREATE INDEX IF NOT EXISTS posts_account_id_idx ON posts (account_id);
 
 CREATE TABLE IF NOT EXISTS site_visitors (
   id          SERIAL PRIMARY KEY,
@@ -66,3 +68,35 @@ CREATE TABLE IF NOT EXISTS security_events (
 );
 
 CREATE INDEX IF NOT EXISTS security_events_type_created_idx ON security_events (event_type, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS media_assets (
+  id                     UUID PRIMARY KEY,
+  account_id             INT REFERENCES accounts(id) ON DELETE SET NULL,
+  uploaded_by_account_id INT REFERENCES accounts(id) ON DELETE SET NULL,
+  kind                   TEXT NOT NULL CHECK (kind IN ('avatar', 'blog')),
+  status                 TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'approved', 'rejected', 'superseded')),
+  file_size              INT,
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  approved_at            TIMESTAMPTZ,
+  approved_by_account_id INT REFERENCES accounts(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS media_assets_account_kind_idx ON media_assets (account_id, kind, created_at DESC);
+CREATE INDEX IF NOT EXISTS media_assets_status_created_idx ON media_assets (status, created_at DESC);
+ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS content_hash TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS media_assets_content_hash_uidx ON media_assets (content_hash) WHERE content_hash IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS account_api_keys (
+  id         SERIAL PRIMARY KEY,
+  account_id INT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL DEFAULT 'Default',
+  key_prefix TEXT NOT NULL,
+  token_hash TEXT UNIQUE NOT NULL,
+  last_used_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS account_api_keys_account_idx ON account_api_keys (account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS account_api_keys_active_idx ON account_api_keys (account_id) WHERE revoked_at IS NULL;

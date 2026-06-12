@@ -3,10 +3,17 @@ import Link from "next/link";
 import { FileText, Eye, Plus, ArrowRight, Users } from "lucide-react";
 import UnverifiedUsersPanel from "@/features/admin/components/UnverifiedUsersPanel";
 import { listPosts, type PostMeta } from "@/features/blog/services/posts";
+import { resolveAdminActor } from "@/features/accounts/services/permissions/actor";
+import { canAccessAdminSettings } from "@/features/accounts/services/permissions/resolve";
 
 export const metadata: Metadata = { title: "Dashboard – Admin" };
 
 export default async function AdminDashboard() {
+  const actor = await resolveAdminActor();
+  const showSettings =
+    actor.kind === "full" ||
+    (actor.kind === "account" && canAccessAdminSettings(actor.slugs, actor.username));
+
   let posts: PostMeta[] = [];
   try {
     posts = await listPosts();
@@ -67,12 +74,14 @@ export default async function AdminDashboard() {
             <FileText className="w-4 h-4" />
             All posts
           </Link>
-          <Link
-            href="/admin/settings"
-            className="flex items-center gap-2 px-4 py-2.5 glass text-gray-300 text-sm font-medium rounded-xl card-hover"
-          >
-            Settings
-          </Link>
+          {showSettings && (
+            <Link
+              href="/admin/settings"
+              className="flex items-center gap-2 px-4 py-2.5 glass text-gray-300 text-sm font-medium rounded-xl card-hover"
+            >
+              Settings
+            </Link>
+          )}
           <Link
             href="/admin/users"
             className="flex items-center gap-2 px-4 py-2.5 glass text-gray-300 text-sm font-medium rounded-xl card-hover"
