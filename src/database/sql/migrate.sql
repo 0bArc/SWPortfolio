@@ -44,6 +44,8 @@ ALTER TABLE accounts ADD COLUMN IF NOT EXISTS icon_pending TEXT;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email_hash TEXT;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMPTZ;
 DROP INDEX IF EXISTS accounts_email_lower_uidx;
 CREATE UNIQUE INDEX IF NOT EXISTS accounts_email_hash_uidx ON accounts (email_hash) WHERE email_hash IS NOT NULL;
 UPDATE accounts SET email_verified_at = created_at WHERE email IS NULL AND email_verified_at IS NULL;

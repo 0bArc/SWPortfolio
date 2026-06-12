@@ -22,9 +22,20 @@ export type NotificationView = {
   } | null;
 };
 
+function notificationHref(type: string, postSlug: string | null): string {
+  if (
+    (type === "icon_approved" || type === "icon_rejected") &&
+    postSlug
+  ) {
+    return `/u/${postSlug}`;
+  }
+  if (postSlug) return `/blog/${postSlug}`;
+  return "/blog";
+}
+
 function toView(row: NotificationRow): NotificationView {
   const postSlug = row.post_slug;
-  const href = postSlug ? `/blog/${postSlug}` : "/blog";
+  const href = notificationHref(row.type, postSlug);
   return {
     id: row.id,
     type: row.type,

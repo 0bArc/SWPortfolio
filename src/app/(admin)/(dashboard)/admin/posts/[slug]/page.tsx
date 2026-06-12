@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPost } from "@/features/blog/services/posts";
 import PostEditorScreen from "@/features/admin/components/PostEditorScreen";
+import { requireAdminCmsPage } from "@/features/admin/services/cms-guard";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -13,6 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function EditPostPage({ params }: Props) {
+  await requireAdminCmsPage();
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) notFound();

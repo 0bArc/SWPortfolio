@@ -1,5 +1,7 @@
 import { getAccountSession, getAccountSessionId } from "@/features/accounts/services/auth/session";
 import { distinctBadgeSlugs } from "@/database/accounts";
+import { isStaffAccountSlugs } from "@/features/accounts/services/badges/award";
+import { shouldExcludeStaffFromUserList } from "@/features/admin/services/access";
 import {
   canActOnUser,
   resolvePermissions,
@@ -46,6 +48,10 @@ export async function assertCanActOnTarget(
 
   if (actor.kind === "full") {
     return { ok: true, targetSlugs };
+  }
+
+  if (shouldExcludeStaffFromUserList(actor) && isStaffAccountSlugs(targetSlugs)) {
+    return { ok: false, error: "User not found" };
   }
 
   const check = canActOnUser({

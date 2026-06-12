@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { SCHEMA_STATEMENTS } from "./schema";
+import { backfillPostAuthors } from "@/database/backfill-post-authors";
 import { migratePlaintextEmails } from "@/database/migrate-emails";
 import { PRESET_TAG_STYLES } from "@/lib/tags/presets";
 import { purgeExpiredTokens, purgeOldSecurityEvents } from "@/lib/security/audit";
@@ -28,6 +29,7 @@ export function ensureSchema(pool: Pool): Promise<void> {
       );
     }
     await migratePlaintextEmails(pool);
+    await backfillPostAuthors(pool);
     await purgeExpiredTokens(pool);
     await purgeOldSecurityEvents(pool);
   })().catch((err) => {

@@ -4,6 +4,26 @@ import { BADGE_BY_SLUG, BADGES } from "./definitions";
 
 const NO_ROLE_RANK = 99;
 
+/** Role ranks at or above moderator (founder → mod). Used to hide staff from mod user lists. */
+export const STAFF_ROLE_RANK_CEILING = 3;
+
+export function staffBadgeSlugsUpToModerator(): string[] {
+  const slugs = new Set<string>();
+  for (const def of BADGES) {
+    if (def.role && def.role.rank <= STAFF_ROLE_RANK_CEILING) {
+      slugs.add(def.slug);
+    }
+  }
+  slugs.add("staff");
+  slugs.add("developer");
+  slugs.add("moderator");
+  return [...slugs];
+}
+
+export function isStaffAccountSlugs(slugs: Iterable<string>): boolean {
+  return roleRankFromSlugs(slugs) <= STAFF_ROLE_RANK_CEILING;
+}
+
 /** Legacy slugs → canonical role id */
 const SLUG_ROLE_ALIASES: Record<string, RoleId> = {
   staff: "admin",

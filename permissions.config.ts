@@ -6,9 +6,9 @@
  */
 
 export const PERMISSIONS = {
-  "admin:panel": "Open CMS at /admin (posts, tags, settings)",
+  "admin:panel": "Open staff panel at /admin",
   "admin:users": "Full user management in /admin/users",
-  "users:moderate": "Warn, ban, force profile via staff panel",
+  "users:moderate": "Warn, ban, moderate members in /admin/users",
   "comments:moderate": "Delete comments on posts",
   "badges:award": "Grant community / recognition badges",
   "badges:grant:mod": "Grant Moderator role badge",

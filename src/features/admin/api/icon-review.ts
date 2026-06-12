@@ -13,6 +13,7 @@ import {
   purgeMediaIds,
   rejectMediaId,
 } from "@/features/media/services/assets";
+import { dispatchSiteNotification } from "@/features/notifications/services/events";
 import { publishAccountEvent, publishAdminEvent } from "@/lib/network/server/events";
 import { jsonError } from "@/lib/network/http";
 
@@ -68,6 +69,20 @@ export async function handleReviewIcon(
   publishAdminEvent({ type: "refresh", channel: "admin-icons" });
   publishAccountEvent(row.id, { type: "refresh", channel: "session" });
   publishAccountEvent(row.id, { type: "refresh", channel: "profile" });
+
+  if (action === "approve") {
+    await dispatchSiteNotification({
+      type: "icon_approved",
+      accountId: row.id,
+      username: row.username,
+    });
+  } else {
+    await dispatchSiteNotification({
+      type: "icon_rejected",
+      accountId: row.id,
+      username: row.username,
+    });
+  }
 
   return Response.json({ ok: true, action });
 }

@@ -6,6 +6,7 @@ import {
   adminGetUser,
   adminUpdateUser,
 } from "@/features/accounts/services/admin/manager";
+import { resolveAdminActor } from "@/features/accounts/services/permissions/actor";
 
 type RouteCtx = { params: Promise<{ username: string }> };
 
@@ -14,7 +15,8 @@ export async function GET(_request: NextRequest, ctx: RouteCtx) {
   if (denied) return denied;
 
   const { username } = await ctx.params;
-  const result = await adminGetUser(username);
+  const actor = await resolveAdminActor();
+  const result = await adminGetUser(actor, username);
   if (!result.ok) return Response.json({ error: result.error }, { status: result.status });
   return Response.json(result.data);
 }

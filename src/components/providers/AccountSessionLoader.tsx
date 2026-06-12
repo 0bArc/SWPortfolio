@@ -10,6 +10,7 @@ function toSessionAccount(
     username: row.username,
     displayName: row.displayName,
     icon: row.icon,
+    iconPending: row.iconPending,
     emailVerified: row.emailVerified,
     email: row.email,
     ban: row.ban ?? null,

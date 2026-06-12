@@ -1,10 +1,10 @@
 import { type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
+import { isValidSlug, requireAdminCms } from "@/features/admin/services/auth";
 import { listTagStyles, parseTagStyleConfig, upsertTagStyle } from "@/lib/tags/styles";
 
 export async function GET() {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
   try {
     const styles = await listTagStyles();
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
 
   let body: Record<string, unknown>;

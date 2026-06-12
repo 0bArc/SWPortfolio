@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
+import { isValidSlug, requireAdminCms } from "@/features/admin/services/auth";
 import { getPost, updatePost, deletePost } from "@/features/blog/services/posts";
 import {
   parsePostAccountId,
@@ -18,7 +18,7 @@ function parseTags(raw: unknown): string[] | undefined {
 }
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
   const { slug } = await params;
   if (!isValidSlug(slug)) {
@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
 }
 
 export async function PUT(request: NextRequest, { params }: Ctx) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
   const { slug } = await params;
   if (!isValidSlug(slug)) {
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
   const { slug } = await params;
   if (!isValidSlug(slug)) {

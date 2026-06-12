@@ -84,7 +84,7 @@ export const BADGES: BadgeDef[] = [
     .color("emerald")
     .order(3)
     .role("mod", 3)
-    .permissions("users:moderate", "comments:moderate", "badges:award")
+    .permissions("admin:panel", "users:moderate", "comments:moderate", "badges:award")
     .awardableBy("badges:grant:mod")
     .build(),
 

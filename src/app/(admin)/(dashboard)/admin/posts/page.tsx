@@ -4,11 +4,13 @@ import { Plus } from "lucide-react";
 import { connection } from "next/server";
 import { listPosts } from "@/features/blog/services/posts";
 import AdminPostsList from "@/features/admin/components/AdminPostsList";
+import { requireAdminCmsPage } from "@/features/admin/services/cms-guard";
 
 export const metadata: Metadata = { title: "Posts – Admin" };
 
 export default async function AdminPostsPage() {
   await connection();
+  await requireAdminCmsPage();
   let posts: Awaited<ReturnType<typeof listPosts>> = [];
   try {
     posts = await listPosts();

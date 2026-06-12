@@ -1,8 +1,8 @@
-import { requireAdmin } from "@/features/admin/services/auth";
+import { requireAdminCms } from "@/features/admin/services/auth";
 import { listPostAuthorCandidates } from "@/features/blog/services/post-authors";
 
 export async function GET() {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
 
   try {

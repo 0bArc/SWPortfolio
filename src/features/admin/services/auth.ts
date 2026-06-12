@@ -92,4 +92,32 @@ export async function requireAdmin(): Promise<Response | null> {
   return null;
 }
 
+/** CMS routes (posts, media, tags) — blocks moderator-only panel access. */
+export async function requireAdminCms(): Promise<Response | null> {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
+  const { resolveAdminActor } = await import("@/features/accounts/services/permissions/actor");
+  const { canAccessAdminCms } = await import("@/features/admin/services/access");
+  const actor = await resolveAdminActor();
+  if (!canAccessAdminCms(actor)) {
+    return Response.json({ error: "Not allowed" }, { status: 403 });
+  }
+  return null;
+}
+
+/** Full user admin tools — not moderator-only panel access. */
+export async function requireAdminUsers(): Promise<Response | null> {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
+  const { resolveAdminActor } = await import("@/features/accounts/services/permissions/actor");
+  const { canManageAdminUsers } = await import("@/features/admin/services/access");
+  const actor = await resolveAdminActor();
+  if (!canManageAdminUsers(actor)) {
+    return Response.json({ error: "Not allowed" }, { status: 403 });
+  }
+  return null;
+}
+
 export { COOKIE_NAME, COOKIE_MAX_AGE };

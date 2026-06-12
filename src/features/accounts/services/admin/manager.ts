@@ -1,6 +1,12 @@
 import type { AccountBadge, AccountSettings } from "@/database/schema";
 import { BADGE_BY_SLUG } from "@/features/accounts/services/badges/definitions";
-import { listStaffAwardableSlugs, roleRankFromSlugs } from "@/features/accounts/services/badges/award";
+import {
+  isStaffAccountSlugs,
+  listStaffAwardableSlugs,
+  roleRankFromSlugs,
+  staffBadgeSlugsUpToModerator,
+} from "@/features/accounts/services/badges/award";
+import { shouldExcludeStaffFromUserList } from "@/features/admin/services/access";
 import { mapBadges } from "@/features/accounts/services/badges/service";
 import { isValidDisplayName } from "@/features/accounts/services/validation/fields";
 import {
@@ -17,7 +23,7 @@ import {
   type AdminActor,
 } from "@/features/accounts/services/permissions/actor";
 import { markEmailVerified } from "@/database/email-verification";
-import { createNotification } from "@/database/notifications";
+import { dispatchSiteNotification } from "@/features/notifications/services/events";
 import { banAccount, unbanAccount } from "@/database/ban";
 import {
   awardBadge,
@@ -72,7 +78,13 @@ async function guardTarget(
   targetUsername: string
 ): Promise<AdminActionResult | null> {
   const check = await assertCanActOnTarget(actor, targetUsername);
-  if (!check.ok) return { ok: false, error: check.error, status: 403 };
+  if (!check.ok) {
+    return {
+      ok: false,
+      error: check.error,
+      status: check.error === "User not found" ? 404 : 403,
+    };
+  }
   return null;
 }
 
@@ -133,21 +145,50 @@ export async function awardBadgeToUsername(
   return { ok: true, badge, badges };
 }
 
+async function userListOptions(actor: AdminActor): Promise<{
+  excludeStaff: boolean;
+  staffSlugs: string[];
+}> {
+  const excludeStaff = shouldExcludeStaffFromUserList(actor);
+  return {
+    excludeStaff,
+    staffSlugs: excludeStaff ? staffBadgeSlugsUpToModerator() : [],
+  };
+}
+
+async function rejectStaffTargetForModerator(
+  actor: AdminActor,
+  targetSlugs: string[]
+): Promise<AdminActionResult | null> {
+  if (!shouldExcludeStaffFromUserList(actor)) return null;
+  if (isStaffAccountSlugs(targetSlugs)) {
+    return { ok: false, error: "User not found", status: 404 };
+  }
+  return null;
+}
+
 export async function adminListUsers(
+  actor: AdminActor,
   page: number,
   query?: string
 ): Promise<{ users: AccountListItem[]; total: number; page: number; pageSize: number }> {
   const safePage = Math.max(1, page);
+  const listOpts = await userListOptions(actor);
   const [users, total] = await Promise.all([
-    listAccountsPaginated(safePage, ADMIN_USERS_PAGE_SIZE, query),
-    countAccounts(query),
+    listAccountsPaginated(safePage, ADMIN_USERS_PAGE_SIZE, query, listOpts),
+    countAccounts(query, listOpts),
   ]);
   return { users, total, page: safePage, pageSize: ADMIN_USERS_PAGE_SIZE };
 }
 
-export async function adminGetUser(username: string): Promise<AdminActionResult<AccountListItem>> {
+export async function adminGetUser(
+  actor: AdminActor,
+  username: string
+): Promise<AdminActionResult<AccountListItem>> {
   const row = await getAccountListItem(username.trim().toLowerCase());
   if (!row) return { ok: false, error: "User not found", status: 404 };
+  const blocked = await rejectStaffTargetForModerator(actor, row.badgeSlugs);
+  if (blocked) return blocked;
   return { ok: true, data: row };
 }
 
@@ -228,14 +269,14 @@ export async function adminListUnverifiedUsers() {
 
 async function notifyUser(
   accountId: number,
-  type: string,
+  type: "staff_action" | "staff_warning",
   message: string
 ): Promise<void> {
-  await createNotification({
-    accountId,
-    actorAccountId: null,
+  await dispatchSiteNotification({
     type,
+    accountId,
     message,
+    actorAccountId: null,
   });
 }
 

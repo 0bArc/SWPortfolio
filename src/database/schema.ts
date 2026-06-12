@@ -67,6 +67,8 @@ export const SCHEMA_STATEMENTS = [
   `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS icon_pending TEXT`,
   `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email_hash TEXT`,
   `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`,
+  `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ`,
+  `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMPTZ`,
   `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ`,
   `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS ban_reason TEXT`,
   `ALTER TABLE accounts ADD COLUMN IF NOT EXISTS banned_until TIMESTAMPTZ`,

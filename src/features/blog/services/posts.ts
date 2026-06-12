@@ -1,4 +1,4 @@
-import { getPool } from "@/database";
+import { getPoolReady } from "@/database";
 import { resolveWorkingIconUrl } from "@/features/media/services/assets";
 
 export interface PostMeta {
@@ -55,14 +55,16 @@ const PUBLISHED_META_COLS = `
 `;
 
 export async function listPosts(): Promise<PostMeta[]> {
-  const { rows } = await getPool().query<PostMeta>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<PostMeta>(
     `SELECT ${META_COLS} FROM posts ORDER BY date DESC, created_at DESC`
   );
   return rows;
 }
 
 export async function listPostsByAccount(accountId: number): Promise<PostMeta[]> {
-  const { rows } = await getPool().query<PostMeta>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<PostMeta>(
     `SELECT ${META_COLS} FROM posts WHERE account_id = $1 ORDER BY date DESC, created_at DESC`,
     [accountId]
   );
@@ -70,7 +72,8 @@ export async function listPostsByAccount(accountId: number): Promise<PostMeta[]>
 }
 
 export async function listPublishedPosts(): Promise<PostMeta[]> {
-  const { rows } = await getPool().query<PostMeta>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<PostMeta>(
     `SELECT ${PUBLISHED_META_COLS} ${PUBLISHED_JOIN}
      WHERE p.status = 'published'
      ORDER BY p.date DESC, p.created_at DESC`
@@ -84,7 +87,8 @@ export async function listPublishedPosts(): Promise<PostMeta[]> {
 }
 
 export async function getPost(slug: string): Promise<Post | null> {
-  const { rows } = await getPool().query<Post>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<Post>(
     `SELECT ${ALL_COLS} FROM posts WHERE slug = $1`,
     [slug]
   );
@@ -92,7 +96,8 @@ export async function getPost(slug: string): Promise<Post | null> {
 }
 
 export async function getPublishedPost(slug: string): Promise<Post | null> {
-  const { rows } = await getPool().query<Post>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<Post>(
     `SELECT ${PUBLISHED_META_COLS}, p.content
      ${PUBLISHED_JOIN}
      WHERE p.slug = $1 AND p.status = 'published'`,
@@ -107,7 +112,8 @@ export async function getPublishedPost(slug: string): Promise<Post | null> {
 }
 
 export async function getAllTags(): Promise<string[]> {
-  const { rows } = await getPool().query<{ tag: string }>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<{ tag: string }>(
     `SELECT DISTINCT unnest(tags) AS tag FROM posts WHERE status = 'published' ORDER BY tag`
   );
   return rows.map((r) => r.tag);
@@ -120,7 +126,8 @@ export async function lookupAccountIcons(
   const icons = new Map<string, string>();
   if (usernames.length === 0 && displayNames.length === 0) return icons;
 
-  const { rows } = await getPool().query<{
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<{
     id: number;
     username: string;
     display_name: string;
@@ -155,7 +162,8 @@ export interface CreatePostInput {
 
 export async function createPost(data: CreatePostInput): Promise<Post> {
   const rt = calcReadingTime(data.content);
-  const { rows } = await getPool().query<Post>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<Post>(
     `INSERT INTO posts (slug, title, excerpt, content, featured_image, tags, author, account_id, status, date, reading_time)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING ${ALL_COLS}`,
@@ -212,7 +220,8 @@ export async function updatePost(slug: string, data: UpdatePostInput): Promise<P
   fields.push(`updated_at = NOW()`);
   values.push(slug);
 
-  const { rows } = await getPool().query<Post>(
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<Post>(
     `UPDATE posts SET ${fields.join(", ")} WHERE slug = $${idx} RETURNING ${ALL_COLS}`,
     values
   );
@@ -220,7 +229,7 @@ export async function updatePost(slug: string, data: UpdatePostInput): Promise<P
 }
 
 export async function deletePost(slug: string): Promise<boolean> {
-  const pool = getPool();
+  const pool = await getPoolReady();
   await pool.query("DELETE FROM post_comments WHERE post_slug = $1", [slug]);
   const { rowCount } = await pool.query("DELETE FROM posts WHERE slug = $1", [slug]);
   return (rowCount ?? 0) > 0;

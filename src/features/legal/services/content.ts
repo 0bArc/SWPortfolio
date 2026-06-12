@@ -56,9 +56,9 @@ function mapDoc(doc: LegalDoc, vars: LegalVars): LegalDoc {
 
 const terms: LegalDoc = {
   title: "Terms of Service",
-  updated: "8 June 2026",
+  updated: "12 June 2026",
   intro:
-    "These terms apply to your use of {domain}, a personal portfolio and blog operated by {owner}.",
+    "These terms apply to your use of {domain} — a personal portfolio, blog, and community site operated by {owner}.",
   glossary: [
     {
       term: "Applicable law",
@@ -97,9 +97,9 @@ const terms: LegalDoc = {
     {
       heading: "1. About this website",
       paragraphs: [
-        "{domain} is a personal portfolio and blog operated by {owner}.",
-        "The site presents personal projects, technical work, articles, and related content.",
-        "The site offers optional free visitor accounts for commenting on blog posts. There are no payments, subscriptions, or commercial platform services.",
+        "{domain} is operated by {owner} and combines a public portfolio, a technical blog, and optional community accounts.",
+        "Published posts may be written by {owner} or by approved Author accounts. Comments, profiles, badges, and notifications are available to registered members.",
+        "The site is free to use. There are no payments, subscriptions, or paid tiers.",
       ],
     },
     {
@@ -137,10 +137,11 @@ const terms: LegalDoc = {
     {
       heading: "4. Visitor accounts",
       paragraphs: [
-        "You may create a free account to comment on published blog posts. Accounts require a username, display name, and password. Email verification is not offered at this time; sign-up is protected by a captcha instead.",
-        "Each account receives a public profile page at /u/your-username. You are responsible for your account credentials and for activity under your account.",
-        "Comments must be lawful and respectful. {owner} may remove comments or suspend accounts that abuse the service, spam, harass others, or violate these terms.",
-        "Optional avatar images must be hosted at HTTPS URLs you provide. Connected external login providers (bridges) may be added later; existing password accounts remain valid.",
+        "You may create a free account to comment, receive notifications, and use a public profile at /u/your-username. Sign-up requires a username, display name, password, and email address. Email verification and Cloudflare Turnstile captcha are used to reduce abuse.",
+        "You are responsible for your credentials and for all activity under your account. Keep your password private and tell us promptly if you suspect unauthorised access.",
+        "Author accounts may publish blog posts when granted by staff. Author content must follow the same acceptable-use rules as comments.",
+        "Comments and profile content must be lawful and respectful. Staff may remove content, issue warnings, suspend accounts, or revoke badges when rules are broken.",
+        "You may upload or link an avatar image subject to review. Optional API keys let you access the public API programmatically; you must keep keys secret.",
       ],
     },
     {
@@ -166,7 +167,15 @@ const terms: LegalDoc = {
       ],
     },
     {
-      heading: "6. Third-party links and services",
+      heading: "6. Staff and moderation",
+      paragraphs: [
+        "Trusted staff members (Founder, Administrators, Developers, and Moderators) help operate the site. They may access a password-protected staff panel at /admin.",
+        "Moderators may manage community members — for example warnings, bans, and community badges — but cannot change site settings or edit other staff accounts.",
+        "Higher staff roles may publish posts, manage media, and perform full account administration. Staff actions that affect your account may generate in-site notifications.",
+      ],
+    },
+    {
+      heading: "7. Third-party links and services",
       paragraphs: [
         "This site may link to third-party websites, repositories, APIs, or services. Accessing them is at your own risk.",
         "{owner} does not control third-party content, availability, security, or privacy practices.",
@@ -174,7 +183,7 @@ const terms: LegalDoc = {
       ],
     },
     {
-      heading: "7. Content disclaimer",
+      heading: "8. Content disclaimer",
       paragraphs: [
         "Content on this site is provided for general information and education only. It is not legal, financial, medical, or professional advice.",
         "You are responsible for how you use information from this site. Mentioning a tool, product, or topic does not mean {owner} endorses it.",
@@ -182,26 +191,26 @@ const terms: LegalDoc = {
       ],
     },
     {
-      heading: "8. Limitation of liability",
+      heading: "9. Limitation of liability",
       paragraphs: [
         "To the extent permitted by applicable law, {owner} is not liable for indirect, incidental, or consequential loss arising from use of — or inability to use — this website.",
         "Nothing in these terms excludes or limits liability where such exclusion or limitation is prohibited by mandatory applicable law.",
       ],
     },
     {
-      heading: "9. Changes",
+      heading: "10. Changes",
       paragraphs: [
         "{owner} may update the site or these terms at any time. Updated terms take effect when published on this page. Continued use after an update means you accept the revised terms.",
       ],
     },
     {
-      heading: "10. Governing law",
+      heading: "11. Governing law",
       paragraphs: [
         "These terms are governed by Norwegian law. Disputes should first be resolved amicably where possible. If that fails, Norwegian courts have jurisdiction, except where mandatory law requires otherwise.",
       ],
     },
     {
-      heading: "11. Contact",
+      heading: "12. Contact",
       paragraphs: [
         "Questions about these terms may be sent to {email}.",
         "For information about personal data, see the Privacy Policy.",
@@ -212,9 +221,9 @@ const terms: LegalDoc = {
 
 const privacy: LegalDoc = {
   title: "Privacy Policy",
-  updated: "8 June 2026",
+  updated: "12 June 2026",
   intro:
-    "This policy explains how {owner} handles information in connection with {domain}. We collect as little data as possible.",
+    "This policy explains what personal data {owner} processes when you use {domain}, why it is needed, and what choices you have.",
   glossary: [
     {
       term: "Personal data",
@@ -258,14 +267,14 @@ const privacy: LegalDoc = {
       heading: "1. Data controller",
       paragraphs: [
         "The data controller for personal data related to this site is {owner}. Contact: {email}.",
-        "This is a personal portfolio and blog, not a large-scale commercial data platform.",
+        "{domain} is a personal site with optional community accounts — not a large-scale commercial data broker or ad network.",
       ],
     },
     {
-      heading: "2. What we do not collect",
+      heading: "2. What we do not do",
       paragraphs: [
-        "We do not verify email addresses, run newsletters, process payments, or use ad/tracking platforms such as Google Analytics or Meta Pixel.",
-        "The Contact link opens your own email client. We do not store your message until you send it yourself.",
+        "We do not sell personal data, run newsletters, process payments, or use ad/tracking platforms such as Google Analytics or Meta Pixel.",
+        "The Contact link opens your own email client. We do not receive your message until you send it yourself.",
       ],
     },
     {
@@ -274,28 +283,33 @@ const privacy: LegalDoc = {
       list: [
         "Loading screen — `sessionStorage` is used once per browser session to avoid repeating the loading animation",
         "Server logs — the hosting provider may log IP address, timestamp, requested URL, and browser information (User-Agent) for security and operations",
-        "Blog content — published posts (title, text, tags, author, date, reading time, and optional featured image) are stored in a database and are publicly visible",
-        "Blog images — images uploaded by the administrator are stored on the server as WebP files and served via `/api/images/`",
-        "GitHub data — public profile and repository information is fetched from GitHub's API as needed and may be temporarily cached; we do not permanently store GitHub data in our own database",
-        "Cookie consent — essential cookies and optional analytics preferences are stored in a database with a `decidedAt` unix timestamp when you accept or decline",
-        "Visitor accounts — if you sign up: username, display name, password (stored as a salted hash, never plain text), optional avatar URL, signup IP, last login IP, session tokens (hashed in the database), and an activity log (sign-up, login, comments)",
+        "Blog content — published posts (title, text, tags, author, date, reading time, optional featured image, linked author account) are stored in PostgreSQL and are publicly visible",
+        "Uploaded images — blog and avatar images are stored on the server as WebP files, tracked in the database, and served via `/api/images/`",
+        "GitHub data — public profile and repository information is fetched from GitHub's API as needed and may be temporarily cached; we do not permanently store GitHub profile data in our own database",
+        "Cookie consent — your choice is stored in the database with a timestamp when you accept or decline optional cookies",
+        "Accounts — username, display name, email (encrypted at rest when enabled), email verification status, password hash, optional bio, avatar references, privacy settings, signup IP, last login IP, ban/suspension records, and badge grants",
+        "Sessions — httpOnly `account_session` cookie plus hashed session tokens with expiry and IP in the database",
         "Comments — text you post on blog posts, linked to your account and shown publicly with your username and display name",
-        "Captcha — Cloudflare Turnstile is used on sign-up to reduce abuse; Turnstile may process technical signals according to Cloudflare's privacy policy",
+        "Notifications — in-site messages (for example staff warnings, badge awards, or verification notices) stored per account",
+        "API keys — optional hashed keys you create for programmatic access to the public API; only a prefix is shown after creation",
+        "Staff actions — when moderators or administrators act on an account, we may store who performed the action and related metadata (for example ban reason or badge grant)",
+        "Captcha — Cloudflare Turnstile is used on sign-up; Turnstile may process technical signals under Cloudflare's privacy policy",
       ],
     },
     {
       heading: "4. Visitor accounts and sessions",
       paragraphs: [
-        "Accounts are optional and used to comment on blog posts. On sign-up or login, an httpOnly session cookie (`account_session`) is set. Session tokens are stored hashed in the database with expiry and IP address.",
-        "Public profile pages show your display name, username, optional avatar, and join date. Passwords are never shown.",
-        "External login bridges (e.g. GitHub) may be added later; bridge tokens would be stored in a separate table linked to your account.",
+        "Accounts are optional and used for comments, profiles, notifications, and (when authorised) authoring posts. On sign-up or login, an httpOnly session cookie (`account_session`) is set. Session tokens are stored hashed in the database with expiry and IP address.",
+        "Email addresses are used for verification and account recovery flows. Verified status may be required for some features.",
+        "Public profile pages show your display name, username, optional avatar, badges you choose to display, and join date according to your privacy settings. Passwords and API key secrets are never shown.",
       ],
     },
     {
-      heading: "5. Admin access (site owner only)",
+      heading: "5. Staff panel access",
       paragraphs: [
-        "A password-protected admin area is used exclusively by {owner} to publish posts. On login, an httpOnly session cookie (`admin_session`) signed with HMAC is set.",
-        "This cookie applies only to the site owner and does not contain personal data about visitors.",
+        "A password-protected staff area at `/admin` is used to publish content and moderate the community. On login, an httpOnly session cookie (`admin_session`) signed with HMAC is set.",
+        "Founder, Administrators, Developers, and Moderators may access parts of this panel according to their role. Moderators can manage community members but cannot open site settings or view other staff in the user list.",
+        "Staff with CMS access may view account data needed for moderation, publishing, and media review. The `admin_session` cookie identifies staff login state; it does not contain visitor passwords.",
       ],
     },
     {
@@ -306,8 +320,9 @@ const privacy: LegalDoc = {
         "Storing cookie consent choices (consent)",
         "Operating, troubleshooting, and protecting the site against abuse (legitimate interest)",
         "Managing and publishing content (processing by the site owner)",
-        "Operating visitor accounts and comments (contract / legitimate interest)",
-        "Preventing sign-up abuse via captcha (legitimate interest)",
+        "Operating visitor accounts, comments, notifications, and API keys (contract / legitimate interest)",
+        "Community moderation and abuse prevention (legitimate interest)",
+        "Preventing sign-up abuse via captcha and email verification (legitimate interest)",
       ],
     },
     {
@@ -324,8 +339,10 @@ const privacy: LegalDoc = {
         "Server logs are kept according to the hosting provider's routines, usually for a limited time.",
         "Blog content and uploaded images are kept until deleted by the administrator or until the server is rebuilt.",
         "Admin sessions expire after inactivity, when you log out, or when the server is purged.",
-        "Account session tokens expire after 30 days or when you sign out. Account data is kept until you request deletion or the account is removed by the site owner.",
-        "Comments remain visible until deleted by you (when available) or by the site owner.",
+        "Account session tokens expire after 30 days or when you sign out. Account data is kept until you request deletion or the account is removed by staff.",
+        "Notifications are kept while relevant or until cleared according to site routines.",
+        "Revoked API keys remain in the database in revoked form for audit purposes.",
+        "Comments remain visible until deleted by you (when available) or by staff.",
       ],
     },
     {

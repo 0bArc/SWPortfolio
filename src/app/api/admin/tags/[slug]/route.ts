@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
+import { isValidSlug, requireAdminCms } from "@/features/admin/services/auth";
 import { getTagStyle, parseTagStyleConfig, upsertTagStyle, deleteTagStyle } from "@/lib/tags/styles";
 
 interface RouteCtx {
@@ -8,7 +8,7 @@ interface RouteCtx {
 }
 
 export async function GET(_req: NextRequest, { params }: RouteCtx) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
 
   const { slug } = await params;
@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: RouteCtx) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteCtx) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
 
   const { slug } = await params;
@@ -54,7 +54,7 @@ export async function PUT(request: NextRequest, { params }: RouteCtx) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteCtx) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
 
   const { slug } = await params;

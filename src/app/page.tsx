@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { cacheLife } from "next/cache";
 import Navbar from "@/components/layout/NavbarWrapper";
-import Hero from "@/features/home/components/Hero";
+import HeroWrapper from "@/features/home/components/HeroWrapper";
 import AboutMe from "@/features/home/components/AboutMe";
 import Experience from "@/features/home/components/Experience";
 import ProjectsClient from "@/features/home/components/ProjectsClient";
@@ -59,7 +59,7 @@ export default function Home() {
       <LoadingScreen />
       <Navbar />
       <main className="max-w-4xl mx-auto px-6 pt-24 pb-12">
-        <Hero />
+        <HeroWrapper />
         <AboutMe />
         <Suspense fallback={<ExperienceSkeleton />}>
           <ExperienceContent />

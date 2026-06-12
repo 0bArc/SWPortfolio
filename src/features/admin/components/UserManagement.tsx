@@ -30,11 +30,11 @@ type ListResponse = {
 
 type EditorTab = "profile" | "badges" | "moderation" | "account";
 
-const TABS: { id: EditorTab; label: string }[] = [
-  { id: "profile", label: "Profile" },
+const ALL_TABS: { id: EditorTab; label: string; adminOnly?: boolean }[] = [
+  { id: "profile", label: "Profile", adminOnly: true },
   { id: "badges", label: "Badges" },
   { id: "moderation", label: "Moderation" },
-  { id: "account", label: "Account" },
+  { id: "account", label: "Account", adminOnly: true },
 ];
 
 function fmtDate(iso: string) {
@@ -96,14 +96,20 @@ function SettingToggle({
   );
 }
 
+function visibleTabs(canAdminUsers: boolean) {
+  return ALL_TABS.filter((t) => !t.adminOnly || canAdminUsers);
+}
+
 function UserEditor({
   user,
   grantableSlugs,
+  canAdminUsers,
   onUpdated,
   onDeleted,
 }: {
   user: AccountListItem;
   grantableSlugs: string[];
+  canAdminUsers: boolean;
   onUpdated: (u: AccountListItem) => void;
   onDeleted: () => void;
 }) {
@@ -134,9 +140,11 @@ function UserEditor({
     setBanUntil("");
   }, [user]);
 
+  const tabs = visibleTabs(canAdminUsers);
+
   useEffect(() => {
-    setTab("profile");
-  }, [user.username]);
+    setTab(tabs[0]?.id ?? "moderation");
+  }, [user.username, canAdminUsers]);
 
   const roles = roleLabelsForUser(draft.username, draft.badgeSlugs);
 
@@ -333,8 +341,8 @@ function UserEditor({
         </Link>
       </div>
 
-      <div className="flex gap-1 border-b border-white/[0.08] pb-0">
-        {TABS.map((t) => (
+      <div className="flex gap-1 border-b border-white/[0.08] pb-0 overflow-x-auto">
+        {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
@@ -594,6 +602,7 @@ export default function UserManagement() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AccountListItem | null>(null);
   const [grantableSlugs, setGrantableSlugs] = useState<string[]>([]);
+  const [canAdminUsers, setCanAdminUsers] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(async (p: number, q: string) => {
@@ -625,10 +634,14 @@ export default function UserManagement() {
   useEffect(() => {
     void fetch("/api/accounts/permissions", { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { grantableBadgeSlugs?: string[] } | null) => {
+      .then((data: { grantableBadgeSlugs?: string[]; canAdminUsers?: boolean } | null) => {
         setGrantableSlugs(data?.grantableBadgeSlugs ?? []);
+        setCanAdminUsers(data?.canAdminUsers ?? false);
       })
-      .catch(() => setGrantableSlugs([]));
+      .catch(() => {
+        setGrantableSlugs([]);
+        setCanAdminUsers(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -748,28 +761,30 @@ export default function UserManagement() {
             })}
           </div>
 
-          <div className="flex items-center justify-between gap-3 mt-4">
-            <button
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="admin-btn admin-btn--sm admin-btn--ghost"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </button>
-            <span className="text-[11px] text-gray-500">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+            <span className="text-[11px] text-gray-500 text-center sm:text-left order-first sm:order-none">
               Page {data.page} of {totalPages} · {data.total} users
             </span>
-            <button
-              type="button"
-              disabled={page >= totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
-              className="admin-btn admin-btn--sm admin-btn--ghost"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center justify-between sm:justify-end gap-2">
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="admin-btn admin-btn--sm admin-btn--ghost flex-1 sm:flex-none"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="admin-btn admin-btn--sm admin-btn--ghost flex-1 sm:flex-none"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -778,7 +793,7 @@ export default function UserManagement() {
         <DialogContent
           showCloseButton
           overlayClassName="bg-black/75 backdrop-blur-sm"
-          className="sm:max-w-2xl max-h-[min(90vh,720px)] overflow-y-auto bg-[#111] border border-white/10 text-white ring-0 shadow-2xl p-5 gap-0"
+          className="w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-2xl max-h-[min(90vh,720px)] overflow-y-auto bg-[#111] border border-white/10 text-white ring-0 shadow-2xl p-4 sm:p-5 gap-0"
         >
           {selected && (
             <>
@@ -793,6 +808,7 @@ export default function UserManagement() {
               <UserEditor
                 user={selected}
                 grantableSlugs={grantableSlugs}
+                canAdminUsers={canAdminUsers}
                 onUpdated={handleUpdated}
                 onDeleted={handleDeleted}
               />

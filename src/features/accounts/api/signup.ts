@@ -31,6 +31,8 @@ type SignupBody = {
   password?: string;
   email?: string;
   captchaToken?: string;
+  acceptedTerms?: boolean;
+  acceptedPrivacy?: boolean;
 };
 
 function sessionPayload(accountId: number) {
@@ -79,10 +81,16 @@ export async function handleSignup(request: NextRequest): Promise<Response> {
     }
   }
 
+  if (body.acceptedTerms !== true || body.acceptedPrivacy !== true) {
+    return jsonError("You must accept the Terms of Service and Privacy Policy", 400);
+  }
+
   const captchaOk = await verifyTurnstile(captchaToken, ip);
   if (!captchaOk) {
     return jsonError("Captcha verification failed", 400);
   }
+
+  const legalAcceptedAt = new Date();
 
   try {
     if (await usernameExists(username)) {
@@ -108,6 +116,8 @@ export async function handleSignup(request: NextRequest): Promise<Response> {
     signupIp: ip,
     email: needsEmail ? normalizeEmail(email) : null,
     emailVerified: !needsEmail,
+    termsAcceptedAt: legalAcceptedAt,
+    privacyAcceptedAt: legalAcceptedAt,
   });
 
   const full = await getAccountByUsername(username);

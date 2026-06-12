@@ -18,15 +18,21 @@ import {
 } from "lucide-react";
 
 const NAV = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/posts", label: "Posts", icon: FileText, exact: false },
-  { href: "/admin/media", label: "Media", icon: Images, exact: false },
-  { href: "/admin/tags", label: "Tags", icon: Tags, exact: false },
-  { href: "/admin/users", label: "Users", icon: Users, exact: false },
-  { href: "/admin/settings", label: "Settings", icon: Settings, exact: false },
-];
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, cms: false },
+  { href: "/admin/posts", label: "Posts", icon: FileText, exact: false, cms: true },
+  { href: "/admin/media", label: "Media", icon: Images, exact: false, cms: true },
+  { href: "/admin/tags", label: "Tags", icon: Tags, exact: false, cms: true },
+  { href: "/admin/users", label: "Users", icon: Users, exact: false, cms: false },
+  { href: "/admin/settings", label: "Settings", icon: Settings, exact: false, cms: false, settings: true },
+] as const;
 
-export default function AdminSidebar({ showSettings = false }: { showSettings?: boolean }) {
+export default function AdminSidebar({
+  showSettings = false,
+  showCms = true,
+}: {
+  showSettings?: boolean;
+  showCms?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -108,20 +114,24 @@ export default function AdminSidebar({ showSettings = false }: { showSettings?: 
         </div>
 
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-          {NAV.filter((item) => showSettings || item.href !== "/admin/settings").map(
-            ({ href, label, icon, exact }) => navLink(href, label, icon, exact)
-          )}
+          {NAV.filter((item) => {
+            if ("settings" in item && item.settings) return showSettings;
+            if (item.cms) return showCms;
+            return true;
+          }).map(({ href, label, icon, exact }) => navLink(href, label, icon, exact))}
         </nav>
 
         <div className="px-2 py-3 border-t border-white/5 space-y-0.5">
-          <Link
-            href="/admin/posts/new"
-            onClick={close}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-300 hover:bg-white/4 transition-colors"
-          >
-            <Plus className="w-4 h-4 shrink-0" />
-            New Post
-          </Link>
+          {showCms && (
+            <Link
+              href="/admin/posts/new"
+              onClick={close}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-300 hover:bg-white/4 transition-colors"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              New Post
+            </Link>
+          )}
           <Link
             href="/"
             target="_blank"

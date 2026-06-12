@@ -51,6 +51,8 @@ export async function createAccount(input: {
   signupIp?: string | null;
   email?: string | null;
   emailVerified?: boolean;
+  termsAcceptedAt?: Date;
+  privacyAcceptedAt?: Date;
 }): Promise<AccountPublic> {
   const pool = await getPoolReady();
   const activity: AccountActivityEntry[] = [
@@ -59,10 +61,11 @@ export async function createAccount(input: {
   const emailPlain = input.email?.trim().toLowerCase() ?? null;
   const verifiedAt = input.emailVerified || !emailPlain ? new Date() : null;
   const emailStored = emailPlain ? prepareEmailStorage(emailPlain) : null;
+  const legalAcceptedAt = input.termsAcceptedAt ?? null;
   const { rows } = await pool.query<AccountRow>(
     `INSERT INTO ${ACCOUNTS_TABLE}
-       (username, display_name, icon, password_hash, signup_ip, last_ip, activity, email, email_hash, email_verified_at)
-     VALUES ($1, $2, $3, $4, $5::inet, $5::inet, $6::jsonb, $7, $8, $9)
+       (username, display_name, icon, password_hash, signup_ip, last_ip, activity, email, email_hash, email_verified_at, terms_accepted_at, privacy_accepted_at)
+     VALUES ($1, $2, $3, $4, $5::inet, $5::inet, $6::jsonb, $7, $8, $9, $10, $11)
      RETURNING username, display_name, icon, bio, created_at`,
     [
       input.username,
@@ -74,6 +77,8 @@ export async function createAccount(input: {
       emailStored?.ciphertext ?? null,
       emailStored?.lookupHash ?? null,
       verifiedAt,
+      legalAcceptedAt,
+      input.privacyAcceptedAt ?? legalAcceptedAt,
     ]
   );
   return rowToPublic(rows[0]);
@@ -369,20 +374,62 @@ const ACCOUNT_LIST_SELECT = `
 
 const ACCOUNT_LIST_FROM = `FROM ${ACCOUNTS_TABLE} a LEFT JOIN ${ACCOUNTS_TABLE} staff ON staff.id = a.banned_by_account_id`;
 
-export async function countAccounts(query?: string): Promise<number> {
+function buildAccountListFilters(
+  query?: string,
+  options?: { excludeStaff?: boolean; staffSlugs?: string[] }
+): { whereSql: string; values: unknown[]; limitIdx: number; offsetIdx: number } {
+  const values: unknown[] = [];
+  const where: string[] = [];
+  const q = query?.trim();
+
+  if (q) {
+    values.push(`%${q}%`);
+    where.push(`(a.username ILIKE $${values.length} OR a.display_name ILIKE $${values.length})`);
+  }
+
+  if (options?.excludeStaff && options.staffSlugs?.length) {
+    values.push(options.staffSlugs);
+    where.push(`NOT EXISTS (
+      SELECT 1 FROM ${ACCOUNT_BADGES_TABLE} b
+      WHERE b.account_id = a.id AND b.slug = ANY($${values.length}::text[])
+    )`);
+  }
+
+  values.push(0); // limit placeholder
+  const limitIdx = values.length;
+  values.push(0); // offset placeholder
+  const offsetIdx = values.length;
+
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  return { whereSql, values, limitIdx, offsetIdx };
+}
+
+export async function countAccounts(
+  query?: string,
+  options?: { excludeStaff?: boolean; staffSlugs?: string[] }
+): Promise<number> {
   const pool = await getPoolReady();
   const q = query?.trim();
+  const values: unknown[] = [];
+  const where: string[] = [];
+
   if (q) {
-    const pattern = `%${q}%`;
-    const { rows } = await pool.query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM ${ACCOUNTS_TABLE}
-       WHERE username ILIKE $1 OR display_name ILIKE $1`,
-      [pattern]
-    );
-    return Number(rows[0]?.count ?? 0);
+    values.push(`%${q}%`);
+    where.push(`(a.username ILIKE $${values.length} OR a.display_name ILIKE $${values.length})`);
   }
+
+  if (options?.excludeStaff && options.staffSlugs?.length) {
+    values.push(options.staffSlugs);
+    where.push(`NOT EXISTS (
+      SELECT 1 FROM ${ACCOUNT_BADGES_TABLE} b
+      WHERE b.account_id = a.id AND b.slug = ANY($${values.length}::text[])
+    )`);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const { rows } = await pool.query<{ count: string }>(
-    `SELECT COUNT(*)::text AS count FROM ${ACCOUNTS_TABLE}`
+    `SELECT COUNT(*)::text AS count FROM ${ACCOUNTS_TABLE} a ${whereSql}`,
+    values
   );
   return Number(rows[0]?.count ?? 0);
 }
@@ -390,22 +437,20 @@ export async function countAccounts(query?: string): Promise<number> {
 export async function listAccountsPaginated(
   page: number,
   pageSize: number,
-  query?: string
+  query?: string,
+  options?: { excludeStaff?: boolean; staffSlugs?: string[] }
 ): Promise<AccountListItem[]> {
   const pool = await getPoolReady();
   const offset = Math.max(0, (page - 1) * pageSize);
-  const q = query?.trim();
-  const base = `${ACCOUNT_LIST_SELECT} ${ACCOUNT_LIST_FROM}`;
+  const { whereSql, values, limitIdx, offsetIdx } = buildAccountListFilters(query, options);
+  values[limitIdx - 1] = pageSize;
+  values[offsetIdx - 1] = offset;
 
-  const { rows } = q
-    ? await pool.query<AccountListRow>(
-        `${base} WHERE a.username ILIKE $1 OR a.display_name ILIKE $1 ORDER BY a.created_at DESC LIMIT $2 OFFSET $3`,
-        [`%${q}%`, pageSize, offset]
-      )
-    : await pool.query<AccountListRow>(
-        `${base} ORDER BY a.created_at DESC LIMIT $1 OFFSET $2`,
-        [pageSize, offset]
-      );
+  const base = `${ACCOUNT_LIST_SELECT} ${ACCOUNT_LIST_FROM}`;
+  const { rows } = await pool.query<AccountListRow>(
+    `${base} ${whereSql} ORDER BY a.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+    values
+  );
 
   return rows.map(mapAccountListRow);
 }

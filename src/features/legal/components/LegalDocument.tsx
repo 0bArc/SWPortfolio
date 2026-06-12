@@ -2,12 +2,26 @@ import Link from "next/link";
 import type { GlossaryEntry, LegalDoc } from "@/features/legal/services/content";
 import { t } from "@/lib/i18n";
 
+function GlossaryCards({ entries }: { entries: GlossaryEntry[] }) {
+  return (
+    <div className="md:hidden space-y-2">
+      {entries.map((entry, i) => (
+        <div key={`${entry.term}-card-${i}`} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="text-sm font-semibold text-white mb-1">{entry.term}</p>
+          <p className="text-sm text-gray-400 leading-relaxed">{entry.definition}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function GlossaryTable({ entries }: { entries: GlossaryEntry[] }) {
   return (
     <section className="space-y-3">
       <h2 className="text-base font-semibold text-white tracking-tight">Key terms</h2>
       <p className="text-gray-400">Plain-English definitions for words used in this document.</p>
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      <GlossaryCards entries={entries} />
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full min-w-[32rem] text-left text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-white/[0.03]">
@@ -75,12 +89,12 @@ export default function LegalDocument({
   crossLink?: { href: string; label: string };
 }) {
   return (
-    <main className="max-w-4xl mx-auto px-6 pt-24 pb-12">
-      <h1 className="text-4xl font-bold tracking-tight mb-2">{doc.title}</h1>
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-12">
+      <h1 className="text-2xl sm:text-4xl font-bold tracking-tight mb-2">{doc.title}</h1>
       <p className="text-xs text-gray-500 mb-6">
         {t("legal.updated")} {doc.updated}
       </p>
-      <div className="glass p-6 md:p-8 rounded-2xl text-sm leading-relaxed text-gray-300 space-y-8">
+      <div className="glass p-4 sm:p-6 md:p-8 rounded-2xl text-sm leading-relaxed text-gray-300 space-y-8">
         {doc.intro && <p className="text-gray-200">{doc.intro}</p>}
         {doc.glossary && doc.glossary.length > 0 && <GlossaryTable entries={doc.glossary} />}
         {doc.sections.map((section, i) => (

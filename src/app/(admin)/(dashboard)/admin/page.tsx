@@ -1,35 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileText, Eye, Plus, ArrowRight, Users } from "lucide-react";
+import { FileText, Eye, Plus, ArrowRight, Users, Shield } from "lucide-react";
 import UnverifiedUsersPanel from "@/features/admin/components/UnverifiedUsersPanel";
 import { listPosts, type PostMeta } from "@/features/blog/services/posts";
 import { resolveAdminActor } from "@/features/accounts/services/permissions/actor";
-import { canAccessAdminSettings } from "@/features/accounts/services/permissions/resolve";
+import {
+  canAccessAdminCms,
+  canManageAdminUsers,
+  showAdminSettingsNav,
+} from "@/features/admin/services/access";
 
 export const metadata: Metadata = { title: "Dashboard – Admin" };
 
 export default async function AdminDashboard() {
   const actor = await resolveAdminActor();
-  const showSettings =
-    actor.kind === "full" ||
-    (actor.kind === "account" && canAccessAdminSettings(actor.slugs, actor.username));
+  const showSettings = showAdminSettingsNav(actor);
+  const showCms = canAccessAdminCms(actor);
+  const showUserAdminTools = canManageAdminUsers(actor);
 
   let posts: PostMeta[] = [];
-  try {
-    posts = await listPosts();
-  } catch {
-    // DB unavailable
+  if (showCms) {
+    try {
+      posts = await listPosts();
+    } catch {
+      // DB unavailable
+    }
   }
 
   const published = posts.filter((p) => p.status === "published").length;
   const drafts = posts.filter((p) => p.status === "draft").length;
-
-  const stats = [
-    { label: "Total posts", value: posts.length, icon: FileText, href: "/admin/posts" },
-    { label: "Published",   value: published,     icon: Eye,      href: "/admin/posts" },
-    { label: "Drafts",      value: drafts,        icon: FileText, href: "/admin/posts" },
-  ];
-
   const recent = posts.slice(0, 5);
 
   return (
@@ -39,41 +38,72 @@ export default async function AdminDashboard() {
           Overview
         </p>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        {!showCms && (
+          <p className="text-sm text-gray-500 mt-2 max-w-xl">
+            Community moderation panel — manage member accounts, warnings, and bans.
+          </p>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        {stats.map(({ label, value, icon: Icon, href }) => (
-          <Link key={label} href={href} className="glass rounded-xl p-5 card-hover group">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-600">
-                {label}
-              </p>
-              <Icon className="w-4 h-4 text-gray-700 group-hover:text-gray-500 transition-colors" />
-            </div>
-            <p className="text-3xl font-bold text-white tabular-nums">{value}</p>
-          </Link>
-        ))}
-      </div>
+      {showCms && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+          {[
+            { label: "Total posts", value: posts.length, icon: FileText, href: "/admin/posts" },
+            { label: "Published", value: published, icon: Eye, href: "/admin/posts" },
+            { label: "Drafts", value: drafts, icon: FileText, href: "/admin/posts" },
+          ].map(({ label, value, icon: Icon, href }) => (
+            <Link key={label} href={href} className="glass rounded-xl p-5 card-hover group">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-600">
+                  {label}
+                </p>
+                <Icon className="w-4 h-4 text-gray-700 group-hover:text-gray-500 transition-colors" />
+              </div>
+              <p className="text-3xl font-bold text-white tabular-nums">{value}</p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {!showCms && (
+        <Link
+          href="/admin/users"
+          className="glass rounded-xl p-5 card-hover group flex items-center justify-between mb-10"
+        >
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-600 mb-2">
+              Community
+            </p>
+            <p className="text-lg font-semibold text-white">Open user management</p>
+            <p className="text-sm text-gray-500 mt-1">Search members, send warnings, manage bans.</p>
+          </div>
+          <Shield className="w-8 h-8 text-emerald-500/70 shrink-0" />
+        </Link>
+      )}
 
       <div className="mb-10">
         <p className="text-[11px] font-bold uppercase tracking-widest text-gray-600 mb-4">
           Quick actions
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link
-            href="/admin/posts/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-white text-black text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New post
-          </Link>
-          <Link
-            href="/admin/posts"
-            className="flex items-center gap-2 px-4 py-2.5 glass text-gray-300 text-sm font-medium rounded-xl card-hover"
-          >
-            <FileText className="w-4 h-4" />
-            All posts
-          </Link>
+          {showCms && (
+            <>
+              <Link
+                href="/admin/posts/new"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white text-black text-sm font-semibold rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                New post
+              </Link>
+              <Link
+                href="/admin/posts"
+                className="flex items-center gap-2 px-4 py-2.5 glass text-gray-300 text-sm font-medium rounded-xl card-hover"
+              >
+                <FileText className="w-4 h-4" />
+                All posts
+              </Link>
+            </>
+          )}
           {showSettings && (
             <Link
               href="/admin/settings"
@@ -92,9 +122,9 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      <UnverifiedUsersPanel />
+      {showUserAdminTools && <UnverifiedUsersPanel />}
 
-      {recent.length > 0 && (
+      {showCms && recent.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-600">
@@ -112,16 +142,16 @@ export default async function AdminDashboard() {
               <Link
                 key={post.slug}
                 href={`/admin/posts/${post.slug}`}
-                className={`flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.03] transition-colors ${
+                className={`flex items-center justify-between px-4 sm:px-5 py-3.5 hover:bg-white/[0.03] transition-colors ${
                   i < recent.length - 1 ? "border-b border-white/5" : ""
                 }`}
               >
-                <div className="min-w-0">
+                <div className="min-w-0 pr-3">
                   <p className="text-sm font-medium text-white truncate">{post.title}</p>
                   <p className="text-[11px] text-gray-600 mt-0.5 font-mono">{post.date}</p>
                 </div>
                 <span
-                  className={`ml-4 shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                  className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                     post.status === "published"
                       ? "bg-green-500/10 text-green-400"
                       : "bg-white/5 text-gray-500"

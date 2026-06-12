@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import MediaGalleryPanel from "@/features/admin/components/MediaGalleryPanel";
+import { requireAdminCmsPage } from "@/features/admin/services/cms-guard";
 
 export const metadata: Metadata = { title: "Media – Admin" };
 
-export default function AdminMediaPage() {
+export default async function AdminMediaPage() {
+  await requireAdminCmsPage();
   return (
     <div className="p-4 md:p-8 max-w-6xl">
       <div className="mb-8">

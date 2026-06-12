@@ -1,11 +1,11 @@
 import { type NextRequest } from "next/server";
-import { requireAdmin } from "@/features/admin/services/auth";
+import { requireAdminCms } from "@/features/admin/services/auth";
 import { getAccountSessionId } from "@/features/accounts/services/auth/session";
 import { saveTrackedImage } from "@/features/media/services/assets";
 import { jsonError } from "@/lib/network/http";
 
 export async function POST(request: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
 
   const form = await request.formData();

@@ -77,7 +77,7 @@ export default function AccountProfilePanel({
   showHistoryPublic,
 }: Props) {
   const router = useRouter();
-  const { setAccount } = useAccountSession();
+  const { account: sessionAccount, setAccount } = useAccountSession();
   const [data, setData] = useState<PanelData | null>(null);
   const [saving, setSaving] = useState(false);
   const [nameSaving, setNameSaving] = useState(false);
@@ -133,9 +133,20 @@ export default function AccountProfilePanel({
   }, [load]);
 
   useEffect(() => {
-    const off = onNetworkRefresh("profile", () => void load());
-    return off;
+    const offProfile = onNetworkRefresh("profile", () => void load());
+    const offSession = onNetworkRefresh("session", () => void load());
+    return () => {
+      offProfile();
+      offSession();
+    };
   }, [load]);
+
+  useEffect(() => {
+    if (!sessionAccount) return;
+    setIcon(sessionAccount.icon);
+    setIconPending(sessionAccount.iconPending ?? null);
+    setPendingReview(Boolean(sessionAccount.iconPending));
+  }, [sessionAccount?.icon, sessionAccount?.iconPending, sessionAccount]);
 
   const settings = data?.settings;
   const badges = data?.badges ?? initialBadges;
@@ -404,7 +415,7 @@ export default function AccountProfilePanel({
         <EditableAccountAvatar
           username={username}
           displayName={displayName}
-          icon={iconPending ?? icon}
+          icon={pendingReview ? (iconPending ?? icon) : icon}
           size={80}
           loading={iconLoading}
           pendingReview={pendingReview}

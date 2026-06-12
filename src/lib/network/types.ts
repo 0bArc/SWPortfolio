@@ -17,6 +17,7 @@ export type SessionAccount = {
   username: string;
   displayName: string;
   icon: string | null;
+  iconPending?: string | null;
 };
 
 export type NotificationActor = {

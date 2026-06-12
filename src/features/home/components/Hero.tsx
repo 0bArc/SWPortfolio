@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Mail, PenLine } from "lucide-react";
-import { CONTACT_EMAIL, GITHUB_URL } from "@/lib/env";
 import { useI18n } from "@/providers/I18nProvider";
 
 function GithubIcon({ className }: { className?: string }) {
@@ -13,8 +12,15 @@ function GithubIcon({ className }: { className?: string }) {
   );
 }
 
-export default function Hero() {
+type Props = {
+  contactEmail: string;
+  githubUrl: string;
+};
+
+export default function Hero({ contactEmail, githubUrl }: Props) {
   const { t } = useI18n();
+  const mailHref = contactEmail ? `mailto:${contactEmail}` : undefined;
+
   return (
     <section id="om" className="mb-20 reveal">
       <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
@@ -23,16 +29,18 @@ export default function Hero() {
       <p className="text-lg text-gray-400 max-w-xl leading-relaxed mb-8">
         {t("hero.bio")}
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
+        {mailHref ? (
+          <Link
+            href={mailHref}
+            className="bg-white text-black px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-all flex items-center gap-2"
+          >
+            <Mail className="w-4 h-4" />
+            {t("hero.contact")}
+          </Link>
+        ) : null}
         <Link
-          href={`mailto:${CONTACT_EMAIL}`}
-          className="bg-white text-black px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-all flex items-center gap-2"
-        >
-          <Mail className="w-4 h-4" />
-          {t("hero.contact")}
-        </Link>
-        <Link
-          href={GITHUB_URL}
+          href={githubUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="glass px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/10 transition-all flex items-center gap-2"

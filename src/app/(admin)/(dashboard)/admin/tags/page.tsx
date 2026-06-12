@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { listTagStyles } from "@/lib/tags/styles";
 import TagStyleEditor from "@/features/admin/components/TagStyleEditor";
+import { requireAdminCmsPage } from "@/features/admin/services/cms-guard";
 
 export const metadata: Metadata = { title: "Tags – Admin" };
 
 export default async function TagsPage() {
+  await requireAdminCmsPage();
   let styles: Awaited<ReturnType<typeof listTagStyles>> = [];
   try {
     styles = await listTagStyles();

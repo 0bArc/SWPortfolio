@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireAdmin, isValidSlug } from "@/features/admin/services/auth";
+import { isValidSlug, requireAdminCms } from "@/features/admin/services/auth";
 import {
   parsePostAccountId,
   resolvePostAuthorAccount,
@@ -35,14 +35,14 @@ async function resolveAuthorFromBody(body: Record<string, unknown>) {
 }
 
 export async function GET() {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
   const posts = await listPosts();
   return Response.json(posts);
 }
 
 export async function POST(request: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requireAdminCms();
   if (denied) return denied;
 
   let body: Record<string, unknown>;

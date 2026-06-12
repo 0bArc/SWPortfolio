@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/features/admin/services/auth";
 import { adminListUsers } from "@/features/accounts/services/admin/manager";
+import { resolveAdminActor } from "@/features/accounts/services/permissions/actor";
 
 export async function GET(request: NextRequest) {
   const denied = await requireAdmin();
@@ -10,7 +11,8 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q") ?? undefined;
 
   try {
-    const result = await adminListUsers(page, q);
+    const actor = await resolveAdminActor();
+    const result = await adminListUsers(actor, page, q);
     return Response.json(result);
   } catch (err) {
     console.error("adminListUsers error:", err);

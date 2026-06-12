@@ -23,6 +23,8 @@ export default function AccountAuthForm({ mode, turnstileSiteKey, requireEmail =
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
@@ -33,19 +35,31 @@ export default function AccountAuthForm({ mode, turnstileSiteKey, requireEmail =
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
-    if (isSignup && !captchaToken) {
-      setError("Complete the captcha first");
-      return;
+    if (isSignup) {
+      if (!turnstileSiteKey) {
+        setError("Sign-up is not available right now");
+        return;
+      }
+      if (!captchaToken) {
+        setError("Complete the captcha first");
+        return;
+      }
+      if (!acceptedTerms || !acceptedPrivacy) {
+        setError("Accept the Terms of Service and Privacy Policy to continue");
+        return;
+      }
     }
     setLoading(true);
     try {
-      const body: Record<string, string> = {
+      const body: Record<string, string | boolean> = {
         username: username.trim().toLowerCase(),
         password,
       };
       if (isSignup) {
         body.displayName = displayName.trim();
         body.captchaToken = captchaToken;
+        body.acceptedTerms = true;
+        body.acceptedPrivacy = true;
         if (requireEmail) body.email = email.trim();
       }
 
@@ -200,12 +214,49 @@ export default function AccountAuthForm({ mode, turnstileSiteKey, requireEmail =
           </div>
         </div>
 
-        {isSignup && turnstileSiteKey && (
+        {isSignup && turnstileSiteKey ? (
           <TurnstileWidget
             siteKey={turnstileSiteKey}
             onToken={setCaptchaToken}
             onExpire={() => setCaptchaToken("")}
           />
+        ) : null}
+
+        {isSignup && (
+          <div className="space-y-3 rounded-lg border border-white/[0.08] bg-white/[0.02] p-3.5">
+            <label className="flex items-start gap-2.5 text-[12px] text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 accent-white shrink-0"
+                required
+              />
+              <span>
+                I have read and accept the{" "}
+                <Link href="/terms" target="_blank" className="text-gray-200 underline underline-offset-2 hover:text-white">
+                  Terms of Service
+                </Link>
+                .
+              </span>
+            </label>
+            <label className="flex items-start gap-2.5 text-[12px] text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedPrivacy}
+                onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+                className="mt-0.5 accent-white shrink-0"
+                required
+              />
+              <span>
+                I have read and accept the{" "}
+                <Link href="/privacy" target="_blank" className="text-gray-200 underline underline-offset-2 hover:text-white">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+          </div>
         )}
 
         {error && (
@@ -218,7 +269,14 @@ export default function AccountAuthForm({ mode, turnstileSiteKey, requireEmail =
         <button
           type="submit"
           className="w-full h-11 rounded-lg bg-white text-black text-sm font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:pointer-events-none mt-1"
-          disabled={loading || !username || !password || (isSignup && !displayName) || (isSignup && requireEmail && !email)}
+          disabled={
+            loading ||
+            !username ||
+            !password ||
+            (isSignup && !displayName) ||
+            (isSignup && requireEmail && !email) ||
+            (isSignup && (!captchaToken || !acceptedTerms || !acceptedPrivacy))
+          }
         >
           {loading ? "Working…" : isSignup ? "Create account" : "Sign in"}
         </button>
