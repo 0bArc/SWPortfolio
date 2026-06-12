@@ -13,8 +13,8 @@ import {
   purgeMediaIds,
   rejectMediaId,
 } from "@/features/media/services/assets";
-import { dispatchSiteNotification } from "@/features/notifications/services/events";
-import { publishAccountEvent, publishAdminEvent } from "@/lib/network/server/events";
+import { dispatchSiteEvent } from "@/features/events";
+import { getAccountSessionId } from "@/features/accounts/services/auth/session";
 import { jsonError } from "@/lib/network/http";
 
 export async function handleListPendingIcons(request: NextRequest): Promise<Response> {
@@ -53,11 +53,12 @@ export async function handleReviewIcon(
 
   const pendingIds = idsFromIconUrls(row.icon_pending);
   const oldIconIds = idsFromIconUrls(row.icon);
+  const actorAccountId = await getAccountSessionId();
 
   if (action === "approve") {
     const ok = await approveAccountIcon(row.id);
     if (!ok) return jsonError("No pending photo for this user", 400);
-    for (const id of pendingIds) await approveMediaId(id);
+    for (const id of pendingIds) await approveMediaId(id, actorAccountId);
     const stale = oldIconIds.filter((id) => !pendingIds.includes(id));
     await purgeMediaIds(stale);
   } else {
@@ -66,23 +67,13 @@ export async function handleReviewIcon(
     for (const id of pendingIds) await rejectMediaId(id);
   }
 
-  publishAdminEvent({ type: "refresh", channel: "admin-icons" });
-  publishAccountEvent(row.id, { type: "refresh", channel: "session" });
-  publishAccountEvent(row.id, { type: "refresh", channel: "profile" });
-
-  if (action === "approve") {
-    await dispatchSiteNotification({
-      type: "icon_approved",
-      accountId: row.id,
-      username: row.username,
-    });
-  } else {
-    await dispatchSiteNotification({
-      type: "icon_rejected",
-      accountId: row.id,
-      username: row.username,
-    });
-  }
+  await dispatchSiteEvent({
+    type: "icon.reviewed",
+    actorAccountId,
+    targetAccountId: row.id,
+    username: row.username,
+    action,
+  });
 
   return Response.json({ ok: true, action });
 }

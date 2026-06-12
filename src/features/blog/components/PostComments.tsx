@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { EyeOff, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import AccountAvatar from "@/features/accounts/components/AccountAvatar";
@@ -12,6 +12,7 @@ import {
   type CommentNode,
   type SessionAccount,
   deleteComment,
+  moderateComment,
   onNetworkRefresh,
   syncPermissions,
 } from "@/lib/network/synchronize";
@@ -115,6 +116,7 @@ function CommentItem({
   onPosted,
   canModerate,
   onDelete,
+  onHide,
 }: {
   comment: CommentNode;
   postSlug: string;
@@ -125,6 +127,7 @@ function CommentItem({
   onPosted: () => Promise<void>;
   canModerate: boolean;
   onDelete: (id: number) => Promise<void>;
+  onHide: (id: number) => Promise<void>;
 }) {
   return (
     <li className={depth > 0 ? "mt-3" : undefined}>
@@ -163,15 +166,26 @@ function CommentItem({
               </button>
             )}
             {canModerate && (
-              <button
-                type="button"
-                onClick={() => void onDelete(comment.id)}
-                className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-red-300 transition-colors"
-                title="Delete comment"
-              >
-                <Trash2 className="w-3 h-3" />
-                Delete
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => void onHide(comment.id)}
+                  className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-amber-300 transition-colors"
+                  title="Hide comment"
+                >
+                  <EyeOff className="w-3 h-3" />
+                  Hide
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void onDelete(comment.id)}
+                  className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-red-300 transition-colors"
+                  title="Remove comment"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Remove
+                </button>
+              </>
             )}
           </div>
           {account && replyingTo === comment.id && (
@@ -206,6 +220,7 @@ function CommentItem({
               onPosted={onPosted}
               canModerate={canModerate}
               onDelete={onDelete}
+              onHide={onHide}
             />
           ))}
         </ul>
@@ -237,8 +252,14 @@ export default function PostComments({ postSlug }: { postSlug: string }) {
   }, [postSlug]);
 
   async function handleDelete(commentId: number) {
-    if (!confirm("Delete this comment and its replies?")) return;
+    if (!confirm("Remove this comment from the post?")) return;
     await deleteComment(commentId);
+    await refresh();
+  }
+
+  async function handleHide(commentId: number) {
+    if (!confirm("Hide this comment from public view?")) return;
+    await moderateComment(commentId, "hide");
     await refresh();
   }
 
@@ -311,6 +332,7 @@ export default function PostComments({ postSlug }: { postSlug: string }) {
             onPosted={refresh}
             canModerate={canModerate}
             onDelete={handleDelete}
+            onHide={handleHide}
           />
         ))}
         {comments.length === 0 && (

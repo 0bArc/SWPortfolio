@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { createApiKey, listApiKeysForAccount, revokeApiKey } from "@/database/api-keys";
+import { dispatchSiteEvent } from "@/features/events";
 import { requireVerifiedAccount } from "@/features/accounts/services/auth/session";
 import { API_KEY_MGMT_LIMITS } from "@/lib/network/server/api-limits";
 import { assertSameOrigin, rateLimit, rateLimitAccount } from "@/lib/network/server/security";
@@ -56,6 +57,13 @@ export async function handleCreateApiKey(request: NextRequest): Promise<Response
   const result = await createApiKey(auth.accountId, body.name ?? "Default");
   if ("error" in result) return jsonError(result.error, 400);
 
+  await dispatchSiteEvent({
+    type: "api_key.created",
+    actorAccountId: auth.accountId,
+    keyId: result.key.id,
+    keyName: result.key.name,
+  });
+
   return Response.json({
     key: {
       id: result.key.id,
@@ -84,8 +92,18 @@ export async function handleRevokeApiKey(request: NextRequest, keyId: number): P
   );
   if (accountLimited) return accountLimited;
 
+  const keys = await listApiKeysForAccount(auth.accountId);
+  const target = keys.find((k) => k.id === keyId);
+
   const revoked = await revokeApiKey(auth.accountId, keyId);
   if (!revoked) return jsonError("Key not found", 404);
+
+  await dispatchSiteEvent({
+    type: "api_key.revoked",
+    actorAccountId: auth.accountId,
+    keyId,
+    keyName: target?.name,
+  });
 
   return Response.json({ ok: true });
 }

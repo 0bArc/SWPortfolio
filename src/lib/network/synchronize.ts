@@ -144,6 +144,18 @@ export async function deleteComment(commentId: number): Promise<void> {
   await afterMutation(false);
 }
 
+export async function moderateComment(
+  commentId: number,
+  action: "approve" | "hide" | "remove" | "restore",
+  reason?: string
+): Promise<void> {
+  await networkJson<{ ok: boolean }>(`/api/comments/by-id/${commentId}/moderate`, {
+    method: "PATCH",
+    body: JSON.stringify({ action, reason }),
+  });
+  await afterMutation(false);
+}
+
 export async function markNotificationsRead(ids?: number[]): Promise<void> {
   await networkJson("/api/notifications", {
     method: "PATCH",

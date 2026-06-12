@@ -1,7 +1,9 @@
 import { type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { isValidSlug, requireAdminCms } from "@/features/admin/services/auth";
+import { getAccountSessionId } from "@/features/accounts/services/auth/session";
 import { getPost, updatePost, deletePost } from "@/features/blog/services/posts";
+import { dispatchSiteEvent } from "@/features/events";
 import {
   parsePostAccountId,
   resolvePostAuthorAccount,
@@ -81,6 +83,18 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
     revalidatePath("/blog");
     revalidatePath("/admin/posts");
     revalidatePath(`/admin/posts/${slug}`);
+
+    const actorAccountId = await getAccountSessionId();
+    await dispatchSiteEvent({
+      type: "post.changed",
+      actorAccountId,
+      slug: post.slug,
+      title: post.title,
+      status: post.status,
+      action: "updated",
+      authorAccountId: authorUpdate?.accountId ?? post.accountId ?? null,
+    });
+
     return Response.json(post);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
@@ -99,8 +113,23 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   if (!isValidSlug(slug)) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
+  const existing = await getPost(slug);
   const deleted = await deletePost(slug);
   if (!deleted) return Response.json({ error: "Not found" }, { status: 404 });
+
+  const actorAccountId = await getAccountSessionId();
+  if (existing) {
+    await dispatchSiteEvent({
+      type: "post.changed",
+      actorAccountId,
+      slug,
+      title: existing.title,
+      status: existing.status,
+      action: "deleted",
+      authorAccountId: existing.accountId ?? null,
+    });
+  }
+
   revalidatePath("/blog");
   revalidatePath(`/blog/${slug}`);
   revalidatePath("/admin/posts");

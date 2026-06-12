@@ -102,3 +102,25 @@ CREATE TABLE IF NOT EXISTS account_api_keys (
 
 CREATE INDEX IF NOT EXISTS account_api_keys_account_idx ON account_api_keys (account_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS account_api_keys_active_idx ON account_api_keys (account_id) WHERE revoked_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id                   SERIAL PRIMARY KEY,
+  event_type           TEXT NOT NULL,
+  category             TEXT NOT NULL,
+  actor_account_id     INT REFERENCES accounts(id) ON DELETE SET NULL,
+  target_account_id    INT REFERENCES accounts(id) ON DELETE SET NULL,
+  target_resource_type TEXT,
+  target_resource_id   TEXT,
+  summary              TEXT NOT NULL,
+  meta                 JSONB NOT NULL DEFAULT '{}',
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS audit_logs_category_created_idx ON audit_logs (category, created_at DESC);
+
+ALTER TABLE post_comments ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'approved';
+ALTER TABLE post_comments ADD COLUMN IF NOT EXISTS moderated_by_account_id INT REFERENCES accounts(id) ON DELETE SET NULL;
+ALTER TABLE post_comments ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ;
+ALTER TABLE post_comments ADD COLUMN IF NOT EXISTS moderation_reason TEXT;
+CREATE INDEX IF NOT EXISTS post_comments_moderation_idx ON post_comments (post_slug, moderation_status);

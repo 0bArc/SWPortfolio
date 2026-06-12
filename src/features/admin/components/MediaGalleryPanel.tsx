@@ -21,6 +21,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { connectAdminStream, onNetworkRefresh } from "@/lib/network/synchronize";
 
 type MediaItem = {
   id: string;
@@ -85,6 +86,17 @@ export default function MediaGalleryPanel() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const stream = connectAdminStream();
+    const offIcons = onNetworkRefresh("admin-icons", () => void load());
+    const offMedia = onNetworkRefresh("admin-media", () => void load());
+    return () => {
+      offIcons();
+      offMedia();
+      stream.stop();
+    };
   }, [load]);
 
   async function runAction(id: string, action: "approve" | "reject" | "delete") {

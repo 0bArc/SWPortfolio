@@ -23,7 +23,7 @@ import {
   type AdminActor,
 } from "@/features/accounts/services/permissions/actor";
 import { markEmailVerified } from "@/database/email-verification";
-import { dispatchSiteNotification } from "@/features/notifications/services/events";
+import { dispatchSiteEvent } from "@/features/events";
 import { banAccount, unbanAccount } from "@/database/ban";
 import {
   awardBadge,
@@ -141,6 +141,15 @@ export async function awardBadgeToUsername(
           : "User already has this badge";
     return { ok: false, error: msg, status: 409 };
   }
+
+  await dispatchSiteEvent({
+    type: "badge.awarded",
+    actorAccountId: actor.accountId,
+    targetAccountId: target.id,
+    username: target.username,
+    badgeSlug: slug,
+    badgeLabel: def.label,
+  });
 
   return { ok: true, badge, badges };
 }
@@ -260,24 +269,21 @@ export async function adminGrantBadge(
   if (!granted) return { ok: false, error: "Badge already granted for this period", status: 409 };
   const updated = await getAccountListItem(normalized);
   if (!updated) return { ok: false, error: "User not found", status: 404 };
+
+  await dispatchSiteEvent({
+    type: "badge.awarded",
+    actorAccountId: actor.kind === "account" ? actor.accountId : null,
+    targetAccountId: row.id,
+    username: normalized,
+    badgeSlug: slug,
+    badgeLabel: BADGE_BY_SLUG[slug]?.label,
+  });
+
   return { ok: true, data: updated };
 }
 
 export async function adminListUnverifiedUsers() {
   return listUnverifiedEmailAccounts(30);
-}
-
-async function notifyUser(
-  accountId: number,
-  type: "staff_action" | "staff_warning",
-  message: string
-): Promise<void> {
-  await dispatchSiteNotification({
-    type,
-    accountId,
-    message,
-    actorAccountId: null,
-  });
 }
 
 export async function adminForceVerifyEmail(
@@ -296,14 +302,18 @@ export async function adminForceVerifyEmail(
   if (!row) return { ok: false, error: "User not found", status: 404 };
 
   await markEmailVerified(row.id);
-  await notifyUser(
-    row.id,
-    "staff_action",
-    "Your email has been verified by staff. You now have full access."
-  );
 
   const updated = await getAccountListItem(normalized);
   if (!updated) return { ok: false, error: "User not found", status: 404 };
+
+  await dispatchSiteEvent({
+    type: "user.email_verified",
+    actorAccountId: actor.kind === "account" ? actor.accountId : null,
+    targetAccountId: row.id,
+    username: normalized,
+    byStaff: true,
+  });
+
   return { ok: true, data: updated };
 }
 
@@ -348,31 +358,16 @@ export async function adminModerateUser(
         return { ok: false, error: "Invalid display name", status: 400 };
       }
       await updateAccountDisplayName(row.id, name);
-      if (action.notify !== false) {
-        await notifyUser(
-          row.id,
-          "staff_action",
-          `Staff changed your display name to "${name}". Contact support if this is wrong.`
-        );
-      }
       break;
     }
     case "force_bio": {
       const bio = (action.bio ?? "").trim().slice(0, 500);
       await updateAccountBio(row.id, bio);
-      if (action.notify !== false) {
-        await notifyUser(
-          row.id,
-          "staff_action",
-          "Staff updated your profile description. Check your profile and contact support if needed."
-        );
-      }
       break;
     }
     case "warn": {
       const msg = action.message?.trim() ?? "";
       if (!msg) return { ok: false, error: "Warning message required", status: 400 };
-      await notifyUser(row.id, "staff_warning", `Staff warning: ${msg}`);
       break;
     }
     case "ban": {
@@ -382,21 +377,10 @@ export async function adminModerateUser(
         until: action.banUntil,
         bannedByAccountId: action.bannedByAccountId ?? null,
       });
-      const untilNote = action.banUntil
-        ? ` until ${new Date(action.banUntil).toLocaleString("en-GB")}`
-        : "";
-      await notifyUser(
-        row.id,
-        "staff_action",
-        action.reason?.trim()
-          ? `Your account has been suspended${untilNote}: ${action.reason.trim()}`
-          : `Your account has been suspended${untilNote}.`
-      );
       break;
     }
     case "unban": {
       await unbanAccount(row.id);
-      await notifyUser(row.id, "staff_action", "Your account suspension has been lifted.");
       break;
     }
     default:
@@ -405,6 +389,20 @@ export async function adminModerateUser(
 
   const updated = await getAccountListItem(normalized);
   if (!updated) return { ok: false, error: "User not found", status: 404 };
+
+  await dispatchSiteEvent({
+    type: "user.moderated",
+    actorAccountId: actor.kind === "account" ? actor.accountId : null,
+    targetAccountId: row.id,
+    username: normalized,
+    moderationType: action.type,
+    message: action.message,
+    reason: action.reason,
+    displayName: action.displayName,
+    banUntil: action.banUntil,
+    notify: action.notify,
+  });
+
   return { ok: true, data: updated };
 }
 
@@ -434,5 +432,15 @@ export async function adminRevokeBadge(
 
   const updated = await getAccountListItem(normalized);
   if (!updated) return { ok: false, error: "User not found", status: 404 };
+
+  await dispatchSiteEvent({
+    type: "badge.revoked",
+    actorAccountId: actor.kind === "account" ? actor.accountId : null,
+    targetAccountId: row.id,
+    username: normalized,
+    badgeSlug: slug,
+    badgeLabel: BADGE_BY_SLUG[slug]?.label,
+  });
+
   return { ok: true, data: updated };
 }

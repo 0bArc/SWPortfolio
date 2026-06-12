@@ -3,7 +3,7 @@ import { verifyEmailByToken } from "@/features/accounts/services/email";
 import { getClientIp, jsonError } from "@/lib/network/http";
 import { rateLimit } from "@/lib/network/server/security";
 import { logSecurityEvent } from "@/lib/security/audit";
-import { publishAccountEvent } from "@/lib/network/server/events";
+import { dispatchSiteEvent } from "@/features/events";
 
 export async function handleVerifyEmail(request: NextRequest): Promise<Response> {
   const blocked = rateLimit(request, "verify-email", 20, 15 * 60 * 1000);
@@ -21,7 +21,10 @@ export async function handleVerifyEmail(request: NextRequest): Promise<Response>
     return jsonError("Invalid or expired verification link", 400);
   }
 
-  publishAccountEvent(result.accountId, { type: "refresh", channel: "session" });
+  await dispatchSiteEvent({
+    type: "session.updated",
+    targetAccountId: result.accountId,
+  });
 
   await logSecurityEvent({
     type: "email_verify_success",

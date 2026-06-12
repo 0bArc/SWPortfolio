@@ -27,3 +27,9 @@ export function showAdminSettingsNav(actor: AdminActor): boolean {
   if (actor.kind === "full") return true;
   return actor.kind === "account" && canAccessAdminSettings(actor.slugs, actor.username);
 }
+
+/** Staff with admin panel access — audit trail visibility. */
+export function canViewAuditLogs(actor: AdminActor): boolean {
+  if (actor.kind === "full") return true;
+  return hasPermission(actor.perms, "admin:panel");
+}

@@ -11,7 +11,6 @@ import { getActorPermissions } from "@/features/accounts/services/admin/manager"
 import { requireStaffPanel, requireStaffPermission } from "@/features/accounts/services/staff/guard";
 import { hasPermission } from "@/features/accounts/services/permissions/resolve";
 import { distinctBadgeSlugs, getAccountListItem } from "@/database/accounts";
-import { publishAccountEvent } from "@/lib/network/server/events";
 import { jsonError } from "@/lib/network/http";
 import { assertSameOrigin, rateLimit } from "@/lib/network/server/security";
 
@@ -103,8 +102,6 @@ export async function handleStaffAwardBadge(
     return jsonError(errors[0] ?? "Could not award badges", 400);
   }
 
-  publishAccountEvent(target.id, { type: "refresh", channel: "profile" });
-
   return Response.json({
     ok: true,
     awarded,
@@ -135,8 +132,6 @@ export async function handleStaffRevokeBadge(
 
   const result = await adminRevokeBadge(username, slug);
   if (!result.ok) return jsonError(result.error, result.status);
-
-  publishAccountEvent(result.data.id, { type: "refresh", channel: "profile" });
 
   return Response.json(result.data);
 }
@@ -181,7 +176,6 @@ export async function handleStaffModerate(
   if (type === "force_verify_email") {
     const result = await adminForceVerifyEmail(username);
     if (!result.ok) return jsonError(result.error, result.status);
-    publishAccountEvent(result.data.id, { type: "refresh", channel: "session" });
     return Response.json(result.data);
   }
 
@@ -196,9 +190,6 @@ export async function handleStaffModerate(
     notify: body.notify,
   });
   if (!result.ok) return jsonError(result.error, result.status);
-
-  publishAccountEvent(result.data.id, { type: "refresh", channel: "session" });
-  publishAccountEvent(result.data.id, { type: "refresh", channel: "profile" });
 
   return Response.json(result.data);
 }

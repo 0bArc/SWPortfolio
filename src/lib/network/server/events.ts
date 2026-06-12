@@ -1,21 +1,28 @@
 import "server-only";
 
-export type StreamChannel =
+export type AccountStreamChannel =
   | "notifications"
   | "session"
   | "profile"
-  | "comments"
-  | "admin-icons";
+  | "comments";
+
+export type AdminStreamChannel =
+  | "admin-icons"
+  | "admin-media"
+  | "admin-audit"
+  | "posts";
+
+export type StreamChannel = AccountStreamChannel | AdminStreamChannel;
 
 export type AccountStreamEvent = {
   type: "refresh" | "connected";
-  channel?: StreamChannel;
+  channel?: AccountStreamChannel;
   data?: Record<string, unknown>;
 };
 
 export type AdminStreamEvent = {
   type: "refresh" | "connected";
-  channel?: "admin-icons";
+  channel?: AdminStreamChannel;
   data?: Record<string, unknown>;
 };
 

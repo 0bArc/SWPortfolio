@@ -1,12 +1,15 @@
 import { getPoolReady } from "@/database";
 import { POST_COMMENTS_TABLE, type PostCommentRow } from "@/database/schema";
 
+export type CommentModerationStatus = "approved" | "hidden" | "removed" | "pending";
+
 export type CommentView = {
   id: number;
   postSlug: string;
   parentId: number | null;
   content: string;
   createdAt: string;
+  moderationStatus: CommentModerationStatus;
   author: {
     username: string;
     displayName: string;
@@ -17,7 +20,7 @@ export type CommentView = {
 
 const SELECT_COMMENT = `
   SELECT c.id, c.post_slug, c.account_id, c.parent_id, c.content, c.created_at,
-         a.username, a.display_name, a.icon
+         c.moderation_status, a.username, a.display_name, a.icon
 `;
 
 function toFlat(row: PostCommentRow): Omit<CommentView, "replies"> {
@@ -27,6 +30,7 @@ function toFlat(row: PostCommentRow): Omit<CommentView, "replies"> {
     parentId: row.parent_id ?? null,
     content: row.content,
     createdAt: row.created_at.toISOString(),
+    moderationStatus: (row.moderation_status ?? "approved") as CommentModerationStatus,
     author: {
       username: row.username,
       displayName: row.display_name,
@@ -57,7 +61,7 @@ export async function listCommentsForPost(postSlug: string): Promise<CommentView
     `${SELECT_COMMENT}
      FROM ${POST_COMMENTS_TABLE} c
      JOIN accounts a ON a.id = c.account_id
-     WHERE c.post_slug = $1
+     WHERE c.post_slug = $1 AND c.moderation_status = 'approved'
      ORDER BY c.created_at ASC`,
     [postSlug]
   );
@@ -96,10 +100,10 @@ export async function createComment(input: {
     `WITH inserted AS (
        INSERT INTO ${POST_COMMENTS_TABLE} (post_slug, account_id, content, parent_id)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, post_slug, account_id, parent_id, content, created_at
+       RETURNING id, post_slug, account_id, parent_id, content, created_at, moderation_status
      )
      SELECT i.id, i.post_slug, i.account_id, i.parent_id, i.content, i.created_at,
-            a.username, a.display_name, a.icon
+            i.moderation_status, a.username, a.display_name, a.icon
      FROM inserted i
      JOIN accounts a ON a.id = i.account_id`,
     [input.postSlug, input.accountId, input.content, parentId]
@@ -116,10 +120,62 @@ export type CommentHistoryItem = {
   createdAt: string;
 };
 
+export type ModerateCommentResult = {
+  postSlug: string;
+  accountId: number;
+  previousStatus: CommentModerationStatus;
+  status: CommentModerationStatus;
+};
+
+export async function moderateComment(input: {
+  commentId: number;
+  moderatorAccountId: number | null;
+  status: CommentModerationStatus;
+  reason?: string | null;
+}): Promise<ModerateCommentResult | null> {
+  const pool = await getPoolReady();
+  const { rows } = await pool.query<{
+    post_slug: string;
+    account_id: number;
+    previous_status: string;
+    status: string;
+  }>(
+    `WITH old AS (
+       SELECT id, post_slug, account_id, moderation_status
+       FROM ${POST_COMMENTS_TABLE}
+       WHERE id = $1
+     ),
+     updated AS (
+       UPDATE ${POST_COMMENTS_TABLE} c
+       SET moderation_status = $2,
+           moderated_by_account_id = $3,
+           moderated_at = NOW(),
+           moderation_reason = $4
+       FROM old
+       WHERE c.id = old.id
+       RETURNING c.post_slug, c.account_id, c.moderation_status AS status, old.moderation_status AS previous_status
+     )
+     SELECT post_slug, account_id, previous_status, status FROM updated`,
+    [input.commentId, input.status, input.moderatorAccountId, input.reason ?? null]
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    postSlug: row.post_slug,
+    accountId: row.account_id,
+    previousStatus: row.previous_status as CommentModerationStatus,
+    status: row.status as CommentModerationStatus,
+  };
+}
+
+/** @deprecated Use moderateComment with status "removed" */
 export async function deleteComment(commentId: number): Promise<string | null> {
   const pool = await getPoolReady();
   const { rows } = await pool.query<{ post_slug: string }>(
-    `DELETE FROM ${POST_COMMENTS_TABLE} WHERE id = $1 RETURNING post_slug`,
+    `UPDATE ${POST_COMMENTS_TABLE}
+     SET moderation_status = 'removed', moderated_at = NOW()
+     WHERE id = $1 AND moderation_status != 'removed'
+     RETURNING post_slug`,
     [commentId]
   );
   return rows[0]?.post_slug ?? null;

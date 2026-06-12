@@ -12,6 +12,7 @@ import {
   deleteMediaAsset,
   rejectMediaId,
 } from "@/features/media/services/assets";
+import { dispatchSiteEvent, type MediaModerationAction } from "@/features/events";
 import { jsonError } from "@/lib/network/http";
 
 const UUID_RE = /^[a-f0-9-]{36}$/i;
@@ -46,6 +47,22 @@ export async function handleListMedia(request: NextRequest): Promise<Response> {
   });
 }
 
+async function emitMediaEvent(
+  asset: NonNullable<Awaited<ReturnType<typeof getMediaAssetById>>>,
+  action: MediaModerationAction,
+  actorAccountId: number | null
+): Promise<void> {
+  await dispatchSiteEvent({
+    type: "media.moderated",
+    actorAccountId,
+    mediaId: asset.id,
+    action,
+    kind: asset.kind,
+    targetAccountId: asset.accountId,
+    username: asset.username,
+  });
+}
+
 export async function handleMediaAction(
   request: NextRequest,
   id: string
@@ -55,9 +72,12 @@ export async function handleMediaAction(
   const asset = await getMediaAssetById(id);
   if (!asset) return jsonError("Not found", 404);
 
+  const adminId = await getAccountSessionId();
+
   if (request.method === "DELETE") {
     const ok = await deleteMediaAsset(id);
     if (!ok) return jsonError("Not found", 404);
+    await emitMediaEvent(asset, "delete", adminId);
     return Response.json({ ok: true, action: "delete" });
   }
 
@@ -73,8 +93,6 @@ export async function handleMediaAction(
     return jsonError("action must be approve, reject, or delete", 400);
   }
 
-  const adminId = await getAccountSessionId();
-
   if (action === "approve") {
     try {
       await approveMediaId(id, adminId);
@@ -88,6 +106,8 @@ export async function handleMediaAction(
     const ok = await deleteMediaAsset(id);
     if (!ok) return jsonError("Not found", 404);
   }
+
+  await emitMediaEvent(asset, action as MediaModerationAction, adminId);
 
   return Response.json({ ok: true, action });
 }

@@ -24,7 +24,12 @@ export type NotificationView = {
 
 function notificationHref(type: string, postSlug: string | null): string {
   if (
-    (type === "icon_approved" || type === "icon_rejected") &&
+    (type === "icon_approved" ||
+      type === "icon_rejected" ||
+      type === "badge_awarded" ||
+      type === "badge_revoked" ||
+      type === "media_approved" ||
+      type === "media_rejected") &&
     postSlug
   ) {
     return `/u/${postSlug}`;

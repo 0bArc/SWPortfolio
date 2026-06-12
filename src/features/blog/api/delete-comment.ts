@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
-import { deleteComment } from "@/database/comments";
+import { moderateComment } from "@/database/comments";
+import { dispatchSiteEvent } from "@/features/events";
 import { guardMutation, requireModerator } from "@/lib/network/server/guards";
 import { jsonError } from "@/lib/network/http";
-import { publishBroadcastEvent } from "@/lib/network/server/events";
 
 export async function handleDeleteComment(
   request: NextRequest,
@@ -18,13 +18,22 @@ export async function handleDeleteComment(
   const mod = await requireModerator(request);
   if (mod instanceof Response) return mod;
 
-  const postSlug = await deleteComment(commentId);
-  if (!postSlug) return jsonError("Comment not found", 404);
+  const actorAccountId = mod.kind === "account" ? mod.accountId : null;
 
-  publishBroadcastEvent({
-    type: "refresh",
-    channel: "comments",
-    data: { postSlug },
+  const result = await moderateComment({
+    commentId,
+    moderatorAccountId: actorAccountId,
+    status: "removed",
+  });
+  if (!result) return jsonError("Comment not found", 404);
+
+  await dispatchSiteEvent({
+    type: "comment.moderated",
+    actorAccountId,
+    commentId,
+    postSlug: result.postSlug,
+    action: "remove",
+    targetAccountId: result.accountId,
   });
 
   return Response.json({ ok: true });

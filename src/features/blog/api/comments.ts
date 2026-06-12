@@ -1,9 +1,7 @@
 import type { NextRequest } from "next/server";
 import { requireVerifiedAccount } from "@/features/accounts/services/auth/session";
 import { syncBadgesForAccount } from "@/features/accounts/services/badges/service";
-import { appendActivity } from "@/database/accounts";
-import { publishBroadcastEvent } from "@/lib/network/server/events";
-import { createNotification } from "@/database/notifications";
+import { dispatchSiteEvent } from "@/features/events";
 import { getCommentById, listCommentsForPost, createComment } from "@/database/comments";
 import { guardMutation, guardAccountMutation } from "@/lib/network/server/guards";
 import { getPublishedPost } from "@/features/blog/services/posts";
@@ -45,12 +43,14 @@ export async function handlePostComment(request: NextRequest, postSlug: string):
   }
 
   let parentId: number | null = null;
+  let parentAuthorId: number | null = null;
   if (body.parentId != null) {
     const pid = Number(body.parentId);
     if (!Number.isInteger(pid) || pid < 1) return jsonError("Invalid parent comment", 400);
     const parent = await getCommentById(pid, postSlug);
     if (!parent) return jsonError("Parent comment not found", 404);
     parentId = pid;
+    parentAuthorId = parent.account_id;
   }
 
   let comment;
@@ -65,31 +65,16 @@ export async function handlePostComment(request: NextRequest, postSlug: string):
     return jsonError("Could not post comment", 400);
   }
 
-  if (parentId) {
-    const parent = await getCommentById(parentId, postSlug);
-    if (parent && parent.account_id !== auth.accountId) {
-      await createNotification({
-        accountId: parent.account_id,
-        actorAccountId: auth.accountId,
-        type: "comment_reply",
-        postSlug,
-        commentId: comment.id,
-        message: `${auth.account.displayName} replied to your comment`,
-      });
-    }
-  }
-
-  await appendActivity(auth.accountId, {
-    type: "comment",
-    at: new Date().toISOString(),
-    meta: { postSlug, parentId: parentId ?? undefined },
-  });
   await syncBadgesForAccount(auth.accountId, auth.account.username);
 
-  publishBroadcastEvent({
-    type: "refresh",
-    channel: "comments",
-    data: { postSlug },
+  await dispatchSiteEvent({
+    type: "comment.created",
+    actorAccountId: auth.accountId,
+    postSlug,
+    commentId: comment.id,
+    parentId,
+    parentAuthorId,
+    actorDisplayName: auth.account.displayName,
   });
 
   return Response.json({ comment }, { status: 201 });

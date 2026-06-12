@@ -15,6 +15,7 @@ import {
   postOwnedByAccount,
   updatePost,
 } from "@/features/blog/services/posts";
+import { dispatchSiteEvent } from "@/features/events";
 import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 import { jsonError } from "@/lib/network/http";
 
@@ -113,6 +114,17 @@ export async function handleAuthorCreatePost(request: NextRequest): Promise<Resp
       status: status === "published" ? "published" : "draft",
       date: String(date),
     });
+
+    await dispatchSiteEvent({
+      type: "post.changed",
+      actorAccountId: actor.accountId,
+      slug: post.slug,
+      title: post.title,
+      status: post.status,
+      action: "created",
+      authorAccountId: actor.accountId,
+    });
+
     return Response.json(post, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";
@@ -189,6 +201,17 @@ export async function handleAuthorUpdatePost(
   });
 
   if (!updated) return jsonError("Update failed", 500);
+
+  await dispatchSiteEvent({
+    type: "post.changed",
+    actorAccountId: actor.accountId,
+    slug: updated.slug,
+    title: updated.title,
+    status: updated.status,
+    action: "updated",
+    authorAccountId: actor.accountId,
+  });
+
   return Response.json(updated);
 }
 

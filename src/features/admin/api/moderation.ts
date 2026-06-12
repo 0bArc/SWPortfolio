@@ -4,7 +4,6 @@ import {
   adminListUnverifiedUsers,
   adminModerateUser,
 } from "@/features/accounts/services/admin/manager";
-import { publishAccountEvent } from "@/lib/network/server/events";
 import { jsonError } from "@/lib/network/http";
 
 export async function handleListUnverifiedUsers(): Promise<Response> {
@@ -15,8 +14,6 @@ export async function handleListUnverifiedUsers(): Promise<Response> {
 export async function handleForceVerifyEmail(username: string): Promise<Response> {
   const result = await adminForceVerifyEmail(username);
   if (!result.ok) return jsonError(result.error, result.status);
-
-  publishAccountEvent(result.data.id, { type: "refresh", channel: "session" });
   return Response.json(result.data);
 }
 
@@ -60,9 +57,6 @@ export async function handleModerateUser(
     notify: body.notify,
   });
   if (!result.ok) return jsonError(result.error, result.status);
-
-  publishAccountEvent(result.data.id, { type: "refresh", channel: "session" });
-  publishAccountEvent(result.data.id, { type: "refresh", channel: "profile" });
 
   return Response.json(result.data);
 }

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   FileText,
   Settings,
+  ScrollText,
   LogOut,
   Plus,
   Globe,
@@ -23,15 +24,18 @@ const NAV = [
   { href: "/admin/media", label: "Media", icon: Images, exact: false, cms: true },
   { href: "/admin/tags", label: "Tags", icon: Tags, exact: false, cms: true },
   { href: "/admin/users", label: "Users", icon: Users, exact: false, cms: false },
+  { href: "/admin/audit", label: "Audit Logs", icon: ScrollText, exact: false, cms: false, audit: true },
   { href: "/admin/settings", label: "Settings", icon: Settings, exact: false, cms: false, settings: true },
 ] as const;
 
 export default function AdminSidebar({
   showSettings = false,
   showCms = true,
+  showAudit = true,
 }: {
   showSettings?: boolean;
   showCms?: boolean;
+  showAudit?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -116,6 +120,7 @@ export default function AdminSidebar({
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
           {NAV.filter((item) => {
             if ("settings" in item && item.settings) return showSettings;
+            if ("audit" in item && item.audit) return showAudit;
             if (item.cms) return showCms;
             return true;
           }).map(({ href, label, icon, exact }) => navLink(href, label, icon, exact))}

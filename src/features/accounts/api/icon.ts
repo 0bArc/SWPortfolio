@@ -18,9 +18,9 @@ import {
   submitAccountIconPending,
   updateAccountIcon,
 } from "@/database/accounts";
+import { dispatchSiteEvent } from "@/features/events";
 import { assertSameOrigin, rateLimit } from "@/lib/network/server/security";
 import { jsonError } from "@/lib/network/http";
-import { publishAccountEvent, publishAdminEvent } from "@/lib/network/server/events";
 
 function staffAutoApprovesIcon(perms: Set<import("@permissions-config").Permission>): boolean {
   return hasPermission(perms, "admin:panel") || hasPermission(perms, "users:moderate");
@@ -69,13 +69,25 @@ export async function handleUploadIcon(request: NextRequest): Promise<Response> 
 
     if (autoApprove) {
       await updateAccountIcon(auth.accountId, url);
-      publishAccountEvent(auth.accountId, { type: "refresh", channel: "session" });
     } else {
       await submitAccountIconPending(auth.accountId, url);
-      publishAdminEvent({ type: "refresh", channel: "admin-icons" });
     }
 
-    publishAccountEvent(auth.accountId, { type: "refresh", channel: "profile" });
+    await dispatchSiteEvent({
+      type: "icon.uploaded",
+      actorAccountId: auth.accountId,
+      pendingReview: !autoApprove,
+    });
+
+    await dispatchSiteEvent({
+      type: "media.uploaded",
+      actorAccountId: auth.accountId,
+      mediaId: id,
+      kind: "avatar",
+      status: autoApprove ? "approved" : "pending",
+      pendingReview: !autoApprove,
+    });
+
     const session = await getAccountSessionById(auth.accountId);
 
     return Response.json({
@@ -101,8 +113,11 @@ export async function handleRemoveIcon(): Promise<Response> {
   await purgeMediaIds(ids);
   await clearAccountIcons(auth.accountId);
 
-  publishAccountEvent(auth.accountId, { type: "refresh", channel: "profile" });
-  publishAccountEvent(auth.accountId, { type: "refresh", channel: "session" });
+  await dispatchSiteEvent({
+    type: "icon.removed",
+    actorAccountId: auth.accountId,
+  });
+
   const session = await getAccountSessionById(auth.accountId);
   return Response.json({
     icon: null,

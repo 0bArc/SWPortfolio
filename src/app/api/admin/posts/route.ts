@@ -5,7 +5,9 @@ import {
   parsePostAccountId,
   resolvePostAuthorAccount,
 } from "@/features/blog/services/post-authors";
+import { getAccountSessionId } from "@/features/accounts/services/auth/session";
 import { listPosts, createPost } from "@/features/blog/services/posts";
+import { dispatchSiteEvent } from "@/features/events";
 import { sanitizeMarkdownContent } from "@/lib/markdown/urls";
 
 function parseTags(raw: unknown): string[] {
@@ -80,6 +82,18 @@ export async function POST(request: NextRequest) {
     });
     revalidatePath("/blog");
     revalidatePath("/admin/posts");
+
+    const actorAccountId = await getAccountSessionId();
+    await dispatchSiteEvent({
+      type: "post.changed",
+      actorAccountId,
+      slug: post.slug,
+      title: post.title,
+      status: post.status,
+      action: "created",
+      authorAccountId: authorFields.accountId,
+    });
+
     return Response.json(post, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";

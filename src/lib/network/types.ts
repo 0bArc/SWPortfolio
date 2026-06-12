@@ -46,7 +46,10 @@ export type StreamChannel =
   | "session"
   | "profile"
   | "comments"
-  | "admin-icons";
+  | "admin-icons"
+  | "admin-media"
+  | "admin-audit"
+  | "posts";
 
 export type StreamRefreshData = Record<string, unknown> & {
   channel?: StreamChannel;
